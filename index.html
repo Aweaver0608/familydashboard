@@ -918,14 +918,22 @@
     const apiUrl = `/.netlify/functions/gemini?${params.toString()}`;
 
     let lastError = null;
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
         try {
             const response = await fetch(apiUrl, {
                 method: 'GET'
             });
 
-            if (response.status === 503) {
-                console.warn(`API call failed with status 503 (Attempt ${i + 1}). Retrying...`);
+            if (response.status === 429) {
+                // Rate limit: exponential backoff
+                const wait = Math.pow(2, i) * 1000;
+                console.warn(`Rate limited (429) on attempt ${i + 1}. Waiting ${wait}ms before retrying.`);
+                lastError = new Error('Rate limited by Gemini API (429)');
+                await new Promise(resolve => setTimeout(resolve, wait));
+                continue;
+            }
+            if (response.status === 503 || response.status === 500) {
+                console.warn(`API call failed with status ${response.status} (Attempt ${i + 1}). Retrying...`);
                 lastError = new Error(`API call failed with status: ${response.status}`);
                 await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
                 continue;
@@ -934,9 +942,10 @@
 
             const result = await response.json();
 
-            // Adapt this to your expected result structure
-            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                const responseText = result.candidates[0].content.parts[0].text;
+            // Retry if no content or finishReason is STOP/undefined
+            const candidate = result.candidates?.[0];
+            const responseText = candidate?.content?.parts?.[0]?.text;
+            if (responseText && candidate.finishReason !== 'STOP' && candidate.finishReason !== undefined) {
                 if (responseSchema) {
                     try {
                         return JSON.parse(responseText);
@@ -946,7 +955,10 @@
                 }
                 return responseText;
             } else {
-                throw new Error(`No content received from API. Finish reason: ${result.candidates?.[0]?.finishReason}`);
+                lastError = new Error(`No content received from API. Finish reason: ${candidate?.finishReason}`);
+                console.warn(`No content received (Attempt ${i + 1}). Retrying...`);
+                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+                continue;
             }
         } catch (error) {
             lastError = error;
