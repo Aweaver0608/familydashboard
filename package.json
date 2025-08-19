@@ -1,0 +1,10 @@
+{
+  "name": "familydashboard",
+  "version": "1.0.0",
+  "description": "Personal Family Dashboard with Netlify Functions",
+  "main": "index.js",
+  "scripts": {},
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
