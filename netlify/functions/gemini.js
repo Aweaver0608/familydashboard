@@ -7,6 +7,10 @@ exports.handler = async function(event, context) {
   if (!GEMINI_API_KEY) {
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
       body: JSON.stringify({ error: "Missing Gemini API key" })
     };
   }
@@ -28,11 +32,19 @@ exports.handler = async function(event, context) {
     console.log('Gemini API response:', JSON.stringify(data));
     return {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
       body: JSON.stringify(data)
     };
   } catch (error) {
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      },
       body: JSON.stringify({ error: error.message })
     };
   }
