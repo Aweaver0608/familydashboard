@@ -18,6 +18,7 @@ exports.handler = async function(event, context) {
   };
 
   try {
+    console.log('Gemini API request payload:', JSON.stringify(payload));
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
