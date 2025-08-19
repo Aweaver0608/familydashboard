@@ -24,6 +24,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify(payload)
     });
     const data = await response.json();
+    console.log('Gemini API response:', JSON.stringify(data));
     return {
       statusCode: 200,
       body: JSON.stringify(data)
