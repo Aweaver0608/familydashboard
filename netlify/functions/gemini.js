@@ -12,7 +12,7 @@ exports.handler = async function(event, context) {
   }
 
   // Example Gemini API endpoint and payload (update as needed for your use case)
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY;
+  const url = 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro-latest:generateContent?key=' + GEMINI_API_KEY;
   const payload = {
     contents: [{ parts: [{ text: prompt }] }]
   };
