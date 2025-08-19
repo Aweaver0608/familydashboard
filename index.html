@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Family Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -910,60 +909,51 @@
         
         // --- Gemini API Functions ---
         async function callGemini(prompt, model = "gemini-2.5-flash-preview-05-20", responseSchema = null) {
-             const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
-             if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
-                 console.error("Gemini API key is missing.");
-                 throw new Error("Gemini API key is missing.");
-             }
+    // Build the query string for Netlify Function
+    const params = new URLSearchParams({ prompt, model });
+    if (responseSchema) {
+        params.append("responseSchema", JSON.stringify(responseSchema));
+    }
 
-             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            
-             let lastError = null;
-             for (let i = 0; i < 3; i++) {
-                 try {
-                     const payload = { contents: [{ parts: [{ text: prompt }] }] };
-                     if (responseSchema) {
-                         payload.generationConfig = {
-                             responseMimeType: "application/json",
-                             responseSchema: responseSchema
-                         };
-                     }
+    const apiUrl = `/.netlify/functions/gemini?${params.toString()}`;
 
-                     const response = await fetch(apiUrl, {
-                         method: 'POST',
-                         headers: { 'Content-Type': 'application/json' },
-                         body: JSON.stringify(payload)
-                     });
+    let lastError = null;
+    for (let i = 0; i < 3; i++) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'GET'
+            });
 
-                     if (response.status === 503) {
-                         console.warn(`API call failed with status 503 (Attempt ${i + 1}). Retrying...`);
-                         lastError = new Error(`API call failed with status: ${response.status}`);
-                         await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
-                         continue;
-                     }
-                     if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-                    
-                     const result = await response.json();
-                    
-                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                         const responseText = result.candidates[0].content.parts[0].text;
-                         if (responseSchema) {
-                             try {
-                                 return JSON.parse(responseText);
-                             } catch (e) {
-                                 throw new Error("Invalid JSON response from API.");
-                             }
-                         }
-                         return responseText;
-                     } else {
-                          throw new Error(`No content received from API. Finish reason: ${result.candidates?.[0]?.finishReason}`);
-                     }
-                 } catch (error) {
-                     lastError = error;
-                     console.warn(`An error occurred during API call attempt ${i + 1}:`, error);
-                 }
-             }
-             throw lastError;
+            if (response.status === 503) {
+                console.warn(`API call failed with status 503 (Attempt ${i + 1}). Retrying...`);
+                lastError = new Error(`API call failed with status: ${response.status}`);
+                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+                continue;
+            }
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+
+            const result = await response.json();
+
+            // Adapt this to your expected result structure
+            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                const responseText = result.candidates[0].content.parts[0].text;
+                if (responseSchema) {
+                    try {
+                        return JSON.parse(responseText);
+                    } catch (e) {
+                        throw new Error("Invalid JSON response from API.");
+                    }
+                }
+                return responseText;
+            } else {
+                throw new Error(`No content received from API. Finish reason: ${result.candidates?.[0]?.finishReason}`);
+            }
+        } catch (error) {
+            lastError = error;
+            console.warn(`An error occurred during API call attempt ${i + 1}:`, error);
+        }
+    }
+    throw lastError;
         }
 
         async function fetchVerseOfTheDayFromGemini() {
@@ -1273,40 +1263,44 @@ Ensure the entire output is a single, valid JSON object.`;
         }
 
         function fetchWeather() {
-            if (!WEATHER_API_KEY) { 
-                document.getElementById('weather-loading').textContent = `Weather API Key Missing`; 
-                return; 
-            }
-            const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${WEATHER_CITY}&units=${WEATHER_UNITS}&appid=${WEATHER_API_KEY}`;
-            const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${WEATHER_CITY}&units=${WEATHER_UNITS}&appid=${WEATHER_API_KEY}`;
-            let currentData;
-            fetch(currentWeatherUrl).then(response => response.json()).then(data => {
-                if (data.cod != 200) throw new Error(data.message || "Invalid weather response");
-                currentData = data; 
-                document.getElementById('weather-temp').textContent = `${Math.round(data.main.temp)}°`;
-                document.getElementById('weather-description').textContent = data.weather[0].description;
-                document.getElementById('humidity').textContent = `${data.main.humidity}%`;
-                document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°`;
-                document.getElementById('temp-high').textContent = `${Math.round(data.main.temp_max)}°`;
-                document.getElementById('temp-low').textContent = `${Math.round(data.main.temp_min)}°`;
-                document.getElementById('sunrise-time').textContent = formatUnixTime(data.sys.sunrise);
-                document.getElementById('sunset-time').textContent = formatUnixTime(data.sys.sunset);
-                document.getElementById('weather-icon').setAttribute('data-lucide', getWeatherIcon(data.weather[0].icon));
-                updateStaticBackground(data.weather[0].description); 
-                return fetch(forecastUrl);
-            }).then(response => response.json()).then(data => {
-                if (data.cod != "200") throw new Error(data.message || "Invalid forecast response");
-                document.getElementById('weather-loading').classList.add('hidden');
-                document.getElementById('weather-content').classList.remove('hidden');
-                const forecastContainerEl = document.getElementById('weather-forecast');
-                forecastContainerEl.innerHTML = '';
-                const hourlyForecastContainer = document.getElementById('hourly-forecast');
-                hourlyForecastContainer.innerHTML = '';
-                const dailyForecasts = {};
-                const hourlyData = [];
-                if (data.list?.length) {
-                    const now = new Date().getTime() / 1000;
-                    for(const forecast of data.list) {
+    const city = WEATHER_CITY || "London";
+    const units = WEATHER_UNITS || "imperial";
+    const currentWeatherUrl = `/.netlify/functions/weather?city=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}`;
+    let currentData;
+    fetch(currentWeatherUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.cod != 200) throw new Error(data.message || "Invalid weather response");
+            currentData = data;
+            document.getElementById('weather-temp').textContent = `${Math.round(data.main.temp)}°`;
+            document.getElementById('weather-description').textContent = data.weather[0].description;
+            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+            document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°`;
+            document.getElementById('temp-high').textContent = `${Math.round(data.main.temp_max)}°`;
+            document.getElementById('temp-low').textContent = `${Math.round(data.main.temp_min)}°`;
+            document.getElementById('sunrise-time').textContent = formatUnixTime(data.sys.sunrise);
+            document.getElementById('sunset-time').textContent = formatUnixTime(data.sys.sunset);
+            document.getElementById('weather-icon').setAttribute('data-lucide', getWeatherIcon(data.weather[0].icon));
+            updateStaticBackground(data.weather[0].description);
+
+            // For forecast, call the function again with a different endpoint
+            const forecastUrl = `/.netlify/functions/weather?city=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}&type=forecast`;
+            return fetch(forecastUrl);
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.cod != "200") throw new Error(data.message || "Invalid forecast response");
+            document.getElementById('weather-loading').classList.add('hidden');
+            document.getElementById('weather-content').classList.remove('hidden');
+            const forecastContainerEl = document.getElementById('weather-forecast');
+            forecastContainerEl.innerHTML = '';
+            const hourlyForecastContainer = document.getElementById('hourly-forecast');
+            hourlyForecastContainer.innerHTML = '';
+            const dailyForecasts = {};
+            const hourlyData = [];
+            if (data.list?.length) {
+                const now = new Date().getTime() / 1000;
+                for(const forecast of data.list) {
                         if (forecast.dt >= now && hourlyData.length < 6) { 
                             hourlyData.push({
                                 time: new Date(forecast.dt * 1000).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(' ', ''),
