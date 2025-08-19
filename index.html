@@ -908,7 +908,7 @@
         }
         
         // --- Gemini API Functions ---
-    async function callGemini(prompt, model = "gemini-2.5-flash-preview-05-20", responseSchema = null) {
+    async function callGemini(prompt, model = "gemini-2.5-flash", responseSchema = null) {
     // Build the query string for Netlify Function
     const params = new URLSearchParams({ prompt, model });
     if (responseSchema) {
@@ -995,7 +995,7 @@
                 let exclusionInstruction = versesToExclude.length > 0 ? ` Ensure the verse reference is NOT one of these: ${versesToExclude.join(', ')}.` : "";
                 const versePrompt = `Provide one inspirational Bible verse from the NLT (New Living Translation), including its reference. Try to select a verse that is not extremely common and that can easily be used for inspiration or to give wisdom for future or present issues.${exclusionInstruction} Format it strictly as 'VERSE_TEXT (Book Chapter:Verse NLT)' with no extra commentary or formatting.`;
                 
-                const geminiVerseResponse = await callGemini(versePrompt);
+                const geminiVerseResponse = await callGemini(versePrompt, "gemini-2.5-flash");
                 
                 const strictMatch = geminiVerseResponse.match(/(.*)\s\(([^)]+)\sNLT\)/i);
                 if (!strictMatch) throw new Error("Verse response format was incorrect.");
@@ -1059,7 +1059,7 @@ Based on the Bible verse "${currentVerse.text}" (${currentVerse.reference}), gen
 Ensure the entire output is a single, valid JSON object.`;
 
             try {
-                const insights = await callGemini(insightPrompt, "gemini-2.5-flash-preview-05-20", verseInsightSchema);
+                const insights = await callGemini(insightPrompt, "gemini-2.5-flash", verseInsightSchema);
                 renderVerseCarousel(insights);
 
                 const todayKey = new Date().toISOString().slice(0, 10);
@@ -1172,7 +1172,7 @@ Ensure the entire output is a single, valid JSON object.`;
             const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
             
             try {
-                const parsedJson = await callGemini(prompt, "gemini-2.5-flash-preview-05-20", activitySchema);
+                const parsedJson = await callGemini(prompt, "gemini-2.5-flash", activitySchema);
                 activityIdeas = parsedJson.activities || [];
                 if (activityIdeas.length > 0) {
                     renderActivityCarousel();
