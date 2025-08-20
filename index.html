@@ -429,20 +429,57 @@
             padding: 1rem 1.5rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
+        /* --- Gemini Chat Modal Styles --- */
+        #gemini-chat-modal .modal-body {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #gemini-answer-container {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .chat-message {
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .user-message {
+            background-color: #4285F4;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            align-self: flex-end;
+        }
+        .model-message {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 0.25rem;
+            align-self: flex-start;
+        }
+        #gemini-input-area {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
         #gemini-question-input {
-            width: 100%;
+            flex-grow: 1;
             background: rgba(0,0,0,0.2);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 0.5rem;
             padding: 0.75rem;
             color: white;
+            resize: none;
         }
-        #gemini-answer-container {
-            min-height: 100px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 0.5rem;
-            padding: 1rem;
+        #submit-gemini-question {
+            flex-shrink: 0;
         }
+
 
         /* --- Floating Action Button --- */
         #open-gemini-modal {
@@ -475,7 +512,7 @@
             text-align: left;
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
-            transition: background-color 0.2s;
+            transition: background-color: 0.2s;
         }
         #name-selection-view .name-btn:hover {
             background-color: rgba(255,255,255,0.1);
@@ -659,29 +696,29 @@
     </button>
 
     <!-- Mood Tracker Button -->
-    <button id="mood-tracker-btn" class="glass-btn p-3 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-        <i id="overall-mood-icon" data-lucide="smile" class="w-8 h-8"></i>
+    <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <i id="overall-mood-icon" data-lucide="smile" class="w-16 h-16"></i>
     </button>
 
     <!-- Gemini Q&A Modal -->
     <div id="gemini-modal-overlay" class="modal-overlay" style="display: none;">
-        <div id="gemini-modal" class="modal-content">
+        <div id="gemini-chat-modal" class="modal-content">
             <div class="modal-header flex justify-between items-center">
                 <h2 class="text-xl font-bold">Ask a Question!</h2>
                 <button id="close-gemini-modal" class="p-1 rounded-full hover:bg-white/10">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
-            <div class="modal-body scrollable-content">
-                <textarea id="gemini-question-input" rows="3" placeholder="What is a black hole? Why is the sky blue?"></textarea>
-                <div id="gemini-answer-container" class="mt-4 text-white/90">
-                    <p>Your answer will appear here...</p>
+            <div class="modal-body">
+                <div id="gemini-answer-container" class="scrollable-content">
+                    <!-- Chat messages will be appended here -->
                 </div>
-            </div>
-            <div class="modal-footer flex justify-end">
-                <button id="submit-gemini-question" class="gemini-btn">
-                    Get Answer
-                </button>
+                <div id="gemini-input-area">
+                    <textarea id="gemini-question-input" rows="1" placeholder="Ask anything..."></textarea>
+                    <button id="submit-gemini-question" class="gemini-btn">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -698,7 +735,7 @@
             <div class="modal-body p-0">
                 <div class="carousel-container h-full">
                      <div id="gemini-verse-insight-track" class="carousel-track">
-                         <!-- Content will be injected by JS -->
+                          <!-- Content will be injected by JS -->
                      </div>
                      <button id="prev-verse-insight" class="carousel-button left hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                      <button id="next-verse-insight" class="carousel-button right hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
@@ -723,6 +760,21 @@
         </div>
     </div>
 
+    <!-- Feeling Insight Modal -->
+    <div id="feeling-insight-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="feeling-insight-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 id="feeling-insight-title" class="text-xl font-bold">Understanding Your Feeling</h2>
+                <button id="close-feeling-insight-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="feeling-insight-body" class="modal-body scrollable-content">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // --- CONFIGURATION ---
@@ -731,14 +783,6 @@
         const FAMILY_MEMBERS = ["Andrew", "Jenna", "Olivia", "Malia", "Kaci", "Declan", "Halle", "Liam"];
         
         const FEELINGS_WHEEL = {
-            "Mad": {
-                icon: 'angry', value: 1, color: 'bg-red-600/50',
-                feelings: ["Hurt", "Worried", "Embarrassed", "Vulnerable", "Annoyed", "Defensive", "Sarcastic", "Frustrated", "Jealous", "Hostile", "Hateful", "Selfish", "Angry", "Critical", "Rattled"]
-            },
-            "Scared": {
-                icon: 'frown', value: 2, color: 'bg-orange-500/50',
-                feelings: ["Insecure", "Helpless", "Hopeless", "Anxious", "Rejected", "Confused", "Nervous", "Overwhelmed"]
-            },
             "Joyful": {
                 icon: 'smile', value: 5, color: 'bg-yellow-500/50',
                 feelings: ["Hopeful", "Energetic", "Creative", "Excited", "Passionate", "Enthusiastic", "Amused", "Delighted", "Optimistic", "Cheerful", "Daring", "Successful"]
@@ -751,9 +795,17 @@
                 icon: 'meh', value: 4, color: 'bg-blue-500/50',
                 feelings: ["Trusting", "Loving", "Present", "Relaxed", "Peaceful", "Comfortable", "Safe", "Content", "Serene", "Grounded"]
             },
+            "Scared": {
+                icon: 'frown', value: 2, color: 'bg-orange-500/50',
+                feelings: ["Insecure", "Helpless", "Hopeless", "Anxious", "Rejected", "Confused", "Nervous", "Overwhelmed"]
+            },
             "Sad": {
                 icon: 'frown', value: 2, color: 'bg-indigo-500/50',
                 feelings: ["Uncaring", "Hopeless", "Ashamed", "Depressed", "Miserable", "Desolate", "Guilty", "Stupid", "Lonely", "Bored", "Tired", "Sleepy"]
+            },
+            "Mad": {
+                icon: 'angry', value: 1, color: 'bg-red-600/50',
+                feelings: ["Hurt", "Worried", "Embarrassed", "Vulnerable", "Annoyed", "Defensive", "Sarcastic", "Frustrated", "Jealous", "Hostile", "Hateful", "Selfish", "Angry", "Critical", "Rattled"]
             }
         };
 
@@ -792,6 +844,7 @@
         let currentVerseInsightIndex = 0;
         const VERSE_HISTORY_LENGTH = 365;
         let selectedPersonForMood = null;
+        let geminiChatHistory = [];
 
 
         // --- JSON Schemas for Gemini ---
@@ -828,15 +881,33 @@
             }, 
             "required": ["activities"]
         };
+        
+        const feelingInsightSchema = {
+            type: "OBJECT",
+            properties: {
+                "explanation": { "type": "STRING" },
+                "strategies": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "title": { "type": "STRING" },
+                            "description": { "type": "STRING" }
+                        },
+                        "required": ["title", "description"]
+                    }
+                }
+            },
+            required: ["explanation", "strategies"]
+        };
 
         // --- APPLICATION LOGIC ---
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 updateTime();
-                scheduleDailyVerseUpdate();
-                fetchWeather(); 
-                fetchConversationStarter();
+                initializeDashboard();
                 initializeFeelingsWheel();
+                initializeFeelingInsightModal();
             
                 document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
                 document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
@@ -852,6 +923,7 @@
                 const geminiModalOverlay = document.getElementById('gemini-modal-overlay');
                 document.getElementById('open-gemini-modal').addEventListener('click', () => {
                     geminiModalOverlay.style.display = 'flex';
+                    initializeGeminiChat();
                     lucide.createIcons(); 
                 });
                 document.getElementById('close-gemini-modal').addEventListener('click', () => {
@@ -863,6 +935,13 @@
                     }
                 });
                 document.getElementById('submit-gemini-question').addEventListener('click', handleAskGemini);
+                document.getElementById('gemini-question-input').addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        handleAskGemini();
+                    }
+                });
+
 
                 // --- Verse Devotional Modal Listeners ---
                 const verseWidget = document.getElementById('verse');
@@ -896,77 +975,45 @@
             }
         });
 
-        function scheduleDailyVerseUpdate() {
+        async function initializeDashboard() {
+            await fetchWeather(); // This already triggers activity ideas
+            await scheduleDailyVerseUpdate();
+            await fetchConversationStarter();
+        }
+
+        async function scheduleDailyVerseUpdate() {
             const now = new Date();
             const midnight = new Date(now);
             midnight.setHours(24, 0, 0, 0); 
             const msUntilMidnight = midnight.getTime() - now.getTime();
-            fetchVerseOfTheDayFromGemini(); 
+            await fetchVerseOfTheDayFromGemini(); 
             setTimeout(() => {
                 setInterval(fetchVerseOfTheDayFromGemini, 24 * 60 * 60 * 1000);
             }, msUntilMidnight);
         }
         
-        // --- Gemini API Functions ---
-    async function callGemini(prompt, model = "gemini-2.5-flash", responseSchema = null) {
-    // Build the query string for Netlify Function
-    const params = new URLSearchParams({ prompt, model });
-    if (responseSchema) {
-        params.append("responseSchema", JSON.stringify(responseSchema));
-    }
-
-    const apiUrl = `/.netlify/functions/gemini?${params.toString()}`;
-
-    let lastError = null;
-    for (let i = 0; i < 5; i++) {
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'GET'
-            });
-
-            if (response.status === 429) {
-                // Rate limit: exponential backoff
-                const wait = Math.pow(2, i) * 1000;
-                console.warn(`Rate limited (429) on attempt ${i + 1}. Waiting ${wait}ms before retrying.`);
-                lastError = new Error('Rate limited by Gemini API (429)');
-                await new Promise(resolve => setTimeout(resolve, wait));
-                continue;
-            }
-            if (response.status === 503 || response.status === 500) {
-                console.warn(`API call failed with status ${response.status} (Attempt ${i + 1}). Retrying...`);
-                lastError = new Error(`API call failed with status: ${response.status}`);
-                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
-                continue;
-            }
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-
-            const result = await response.json();
-
-            // Retry if no content or finishReason is STOP/undefined
-            const candidate = result.candidates?.[0];
-            const responseText = candidate?.content?.parts?.[0]?.text;
-            if (responseText && candidate.finishReason !== 'STOP' && candidate.finishReason !== undefined) {
-                if (responseSchema) {
-                    try {
-                        return JSON.parse(responseText);
-                    } catch (e) {
-                        throw new Error("Invalid JSON response from API.");
-                    }
+        // --- Cloud Function Communication ---
+        async function callCloudFunction(type, data = {}) {
+            // IMPORTANT: Replace this with your actual Google Cloud Function Trigger URL
+            const CLOUD_FUNCTION_URL = 'https://family-dashboard-function-187778761196.us-east1.run.app'; 
+            
+            try {
+                const response = await fetch(CLOUD_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, ...data })
+                });
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`Cloud Function call failed with status: ${response.status}. Body: ${errorBody}`);
                 }
-                return responseText;
-            } else {
-                lastError = new Error(`No content received from API. Finish reason: ${candidate?.finishReason}`);
-                console.warn(`No content received (Attempt ${i + 1}). Retrying...`);
-                await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
-                continue;
+                return response.json();
+            } catch (error) {
+                console.error('Error calling Cloud Function:', error);
+                throw error;
             }
-        } catch (error) {
-            lastError = error;
-            console.warn(`An error occurred during API call attempt ${i + 1}:`, error);
         }
-    }
-    throw lastError;
-        }
+
 
         async function fetchVerseOfTheDayFromGemini() {
             const verseTextEl = document.getElementById('verse-text');
@@ -995,7 +1042,8 @@
                 let exclusionInstruction = versesToExclude.length > 0 ? ` Ensure the verse reference is NOT one of these: ${versesToExclude.join(', ')}.` : "";
                 const versePrompt = `Provide one inspirational Bible verse from the NLT (New Living Translation), including its reference. Try to select a verse that is not extremely common and that can easily be used for inspiration or to give wisdom for future or present issues.${exclusionInstruction} Format it strictly as 'VERSE_TEXT (Book Chapter:Verse NLT)' with no extra commentary or formatting.`;
                 
-                const geminiVerseResponse = await callGemini(versePrompt, "gemini-2.5-flash");
+                const response = await callCloudFunction('gemini', { prompt: versePrompt });
+                const geminiVerseResponse = response.candidates[0].content.parts[0].text;
                 
                 const strictMatch = geminiVerseResponse.match(/(.*)\s\(([^)]+)\sNLT\)/i);
                 if (!strictMatch) throw new Error("Verse response format was incorrect.");
@@ -1007,7 +1055,7 @@
                 verseTextEl.textContent = currentVerse.text;
                 verseRefEl.textContent = currentVerse.reference;
 
-                generateAndDisplayVerseInsights(); 
+                generateAndDisplayVerseInsights(currentVerse); // Pass the new verse directly
 
             } catch (error) {
                 console.error("Error fetching verse of the day from Gemini:", error);
@@ -1034,18 +1082,18 @@
             localStorage.setItem('verseHistory', JSON.stringify(history));
         }
         
-        async function generateAndDisplayVerseInsights() {
+        async function generateAndDisplayVerseInsights(verseToAnalyze) {
             const track = document.getElementById('gemini-verse-insight-track');
             if(track) track.innerHTML = `<div class="carousel-slide flex items-center justify-center w-full h-full"><div class="spinner"></div><span class="ml-2">Loading...</span></div>`;
 
-            if (!currentVerse || !currentVerse.text) {
+            if (!verseToAnalyze || !verseToAnalyze.text) {
                 if (track) track.innerHTML = `<div class="carousel-slide text-center p-4"><p>Verse not loaded. Cannot get insights.</p></div>`;
                 return;
             }
 
             const insightPrompt = `
 Act as a theologian and Bible scholar who is skilled at making deep biblical truths accessible to children.
-Based on the Bible verse "${currentVerse.text}" (${currentVerse.reference}), generate a JSON object with two main keys: "devotional" and "context".
+Based on the Bible verse "${verseToAnalyze.text}" (${verseToAnalyze.reference}), generate a JSON object with two main keys: "devotional" and "context".
 
 1.  The "context" key should contain a string with historically accurate information simplified for a child (age 8+). Explain who wrote it, to whom, and the situation, focusing on what was happening that makes the verse's message important.
 
@@ -1059,12 +1107,13 @@ Based on the Bible verse "${currentVerse.text}" (${currentVerse.reference}), gen
 Ensure the entire output is a single, valid JSON object.`;
 
             try {
-                const insights = await callGemini(insightPrompt, "gemini-2.5-flash", verseInsightSchema);
+                const response = await callCloudFunction('gemini', { prompt: insightPrompt });
+                const insights = JSON.parse(response.candidates[0].content.parts[0].text);
                 renderVerseCarousel(insights);
 
                 const todayKey = new Date().toISOString().slice(0, 10);
                 localStorage.setItem('lastVerseDate', todayKey);
-                localStorage.setItem('verseData', JSON.stringify({ verse: currentVerse, insights: insights }));
+                localStorage.setItem('verseData', JSON.stringify({ verse: verseToAnalyze, insights: insights }));
 
             } catch (error) {
                 console.error("Failed to fetch consolidated insights:", error);
@@ -1172,7 +1221,8 @@ Ensure the entire output is a single, valid JSON object.`;
             const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
             
             try {
-                const parsedJson = await callGemini(prompt, "gemini-2.5-flash", activitySchema);
+                const response = await callCloudFunction('gemini', { prompt: prompt });
+                const parsedJson = JSON.parse(response.candidates[0].content.parts[0].text);
                 activityIdeas = parsedJson.activities || [];
                 if (activityIdeas.length > 0) {
                     renderActivityCarousel();
@@ -1267,97 +1317,111 @@ Ensure the entire output is a single, valid JSON object.`;
             
             document.getElementById('verse-text').textContent = currentVerse.text;
             document.getElementById('verse-reference').textContent = currentVerse.reference;
-            generateAndDisplayVerseInsights();
+            generateAndDisplayVerseInsights(currentVerse);
         }
 
         function formatUnixTime(timestamp) {
             return new Date(timestamp * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         }
 
-        function fetchWeather() {
-    const city = WEATHER_CITY || "London";
-    const units = WEATHER_UNITS || "imperial";
-    const currentWeatherUrl = `/.netlify/functions/weather?city=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}`;
-    let currentData;
-    fetch(currentWeatherUrl)
-        .then(response => response.json())
-        .then(data => {
-            if (data.cod != 200) throw new Error(data.message || "Invalid weather response");
-            currentData = data;
-            document.getElementById('weather-temp').textContent = `${Math.round(data.main.temp)}°`;
-            document.getElementById('weather-description').textContent = data.weather[0].description;
-            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
-            document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°`;
-            document.getElementById('temp-high').textContent = `${Math.round(data.main.temp_max)}°`;
-            document.getElementById('temp-low').textContent = `${Math.round(data.main.temp_min)}°`;
-            document.getElementById('sunrise-time').textContent = formatUnixTime(data.sys.sunrise);
-            document.getElementById('sunset-time').textContent = formatUnixTime(data.sys.sunset);
-            document.getElementById('weather-icon').setAttribute('data-lucide', getWeatherIcon(data.weather[0].icon));
-            updateStaticBackground(data.weather[0].description);
+        async function fetchWeather() {
+            try {
+                const currentData = await callCloudFunction('weather', { city: WEATHER_CITY, units: WEATHER_UNITS });
+                if (currentData.cod != 200) throw new Error(currentData.message || "Invalid weather response");
 
-            // For forecast, call the function again with a different endpoint
-            const forecastUrl = `/.netlify/functions/weather?city=${encodeURIComponent(city)}&units=${encodeURIComponent(units)}&type=forecast`;
-            return fetch(forecastUrl);
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.cod != "200") throw new Error(data.message || "Invalid forecast response");
-            document.getElementById('weather-loading').classList.add('hidden');
-            document.getElementById('weather-content').classList.remove('hidden');
-            const forecastContainerEl = document.getElementById('weather-forecast');
-            forecastContainerEl.innerHTML = '';
-            const hourlyForecastContainer = document.getElementById('hourly-forecast');
-            hourlyForecastContainer.innerHTML = '';
-            const dailyForecasts = {};
-            const hourlyData = [];
-            if (data.list?.length) {
-                const now = new Date().getTime() / 1000;
-                for(const forecast of data.list) {
-                        if (forecast.dt >= now && hourlyData.length < 6) { 
+                const forecastData = await callCloudFunction('forecast', { city: WEATHER_CITY, units: WEATHER_UNITS });
+                if (forecastData.cod != "200") throw new Error(forecastData.message || "Invalid forecast response");
+
+                // --- Update Current Weather Display ---
+                document.getElementById('weather-temp').textContent = `${Math.round(currentData.main.temp)}°`;
+                document.getElementById('weather-description').textContent = currentData.weather[0].description;
+                document.getElementById('humidity').textContent = `${currentData.main.humidity}%`;
+                document.getElementById('feels-like').textContent = `${Math.round(currentData.main.feels_like)}°`;
+                document.getElementById('temp-high').textContent = `${Math.round(currentData.main.temp_max)}°`;
+                document.getElementById('temp-low').textContent = `${Math.round(currentData.main.temp_min)}°`;
+                document.getElementById('sunrise-time').textContent = formatUnixTime(currentData.sys.sunrise);
+                document.getElementById('sunset-time').textContent = formatUnixTime(currentData.sys.sunset);
+                document.getElementById('weather-icon').setAttribute('data-lucide', getWeatherIcon(currentData.weather[0].icon));
+                updateStaticBackground(currentData.weather[0].description);
+
+                // --- Process and Display Forecasts ---
+                const forecastContainerEl = document.getElementById('weather-forecast');
+                forecastContainerEl.innerHTML = '';
+                const hourlyForecastContainer = document.getElementById('hourly-forecast');
+                hourlyForecastContainer.innerHTML = '';
+                const dailyForecasts = {};
+                const hourlyData = [];
+
+                if (forecastData.list?.length) {
+                    const now = new Date().getTime() / 1000;
+                    for (const forecast of forecastData.list) {
+                        if (forecast.dt >= now && hourlyData.length < 6) {
                             hourlyData.push({
                                 time: new Date(forecast.dt * 1000).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(' ', ''),
                                 temp: Math.round(forecast.main.temp),
                                 icon: getWeatherIcon(forecast.weather[0].icon),
-                                pop: Math.round(forecast.pop * 100) 
+                                pop: Math.round(forecast.pop * 100)
                             });
                         }
                         const date = new Date(forecast.dt_txt).toLocaleDateString();
                         if (!dailyForecasts[date]) dailyForecasts[date] = { temps: [], icons: [], pops: [] };
                         dailyForecasts[date].temps.push(forecast.main.temp);
                         dailyForecasts[date].icons.push(forecast.weather[0].icon);
-                        dailyForecasts[date].pops.push(forecast.pop); 
+                        dailyForecasts[date].pops.push(forecast.pop);
                     }
                 }
-                for (const hour of hourlyData) {
+
+                hourlyData.forEach(hour => {
                     const hourWrapper = document.createElement('div');
-                    hourWrapper.className = 'forecast-item'; 
+                    hourWrapper.className = 'forecast-item';
                     hourWrapper.innerHTML = `<p class="font-semibold">${hour.time}</p><i class="w-8 h-8 my-1" data-lucide="${hour.icon}"></i><p>${hour.temp}°</p><div class="flex items-center gap-0.5 text-xs"><i data-lucide="umbrella" class="w-3 h-3"></i><span>${hour.pop}%</span></div>`;
                     hourlyForecastContainer.appendChild(hourWrapper);
-                }
+                });
+
                 const forecastForPrompt = [];
                 const forecastToDisplay = [];
-                const sortedDates = Object.keys(dailyForecasts).sort((a,b) => new Date(a) - new Date(b));
+                const sortedDates = Object.keys(dailyForecasts).sort((a, b) => new Date(a) - new Date(b));
                 for (const dateStr of sortedDates) {
                     const dayData = dailyForecasts[dateStr];
                     const dayDate = new Date(dateStr);
                     const dayInfo = { dayName: dayDate.toLocaleDateString('en-US', { weekday: 'short' }), icon: getWeatherIcon(dayData.icons[Math.floor(dayData.icons.length / 2)]), maxTemp: Math.round(Math.max(...dayData.temps)), minTemp: Math.round(Math.min(...dayData.temps)), pop: Math.round(Math.max(...dayData.pops) * 100) };
                     if (forecastForPrompt.length < 6) forecastForPrompt.push(dayInfo);
-                    if (dayDate.toDateString() !== new Date().toDateString() && forecastToDisplay.length < 5) { forecastToDisplay.push(dayInfo); }
+                    if (dayDate.toDateString() !== new Date().toDateString() && forecastToDisplay.length < 5) {
+                        forecastToDisplay.push(dayInfo);
+                    }
                 }
-                for (const day of forecastToDisplay) {
+
+                forecastToDisplay.forEach(day => {
                     const dayWrapper = document.createElement('div');
                     dayWrapper.className = 'forecast-item';
                     dayWrapper.innerHTML = `<p class="day-name">${day.dayName}</p><i class="w-8 h-8 my-1" data-lucide="${day.icon}"></i><p class="temp-range">${day.maxTemp}°/${day.minTemp}°</p><div class="flex items-center gap-1 text-xs"><i class="w-3 h-3" data-lucide="umbrella"></i><span>${day.pop}%</span></div>`;
                     forecastContainerEl.appendChild(dayWrapper);
-                }
-                rawWeatherData = { current: { temp: Math.round(currentData.main.temp), feels_like: Math.round(currentData.main.feels_like), humidity: currentData.main.humidity, description: currentData.weather[0].description, sunrise: formatUnixTime(currentData.sys.sunrise), sunset: formatUnixTime(currentData.sys.sunset) }, forecast: forecastForPrompt };
-                document.getElementById('chance-of-rain').textContent = `${rawWeatherData.forecast[0].pop}%`; 
-                lucide.createIcons(); 
-                fetchActivityIdeas(); 
-            }).catch(error => { console.error('Error fetching weather data:', error); 
-                document.getElementById('weather-loading').textContent = 'Weather Unavailable'; 
-            });
+                });
+
+                rawWeatherData = {
+                    current: {
+                        temp: Math.round(currentData.main.temp),
+                        feels_like: Math.round(currentData.main.feels_like),
+                        humidity: currentData.main.humidity,
+                        description: currentData.weather[0].description,
+                        sunrise: formatUnixTime(currentData.sys.sunrise),
+                        sunset: formatUnixTime(currentData.sys.sunset)
+                    },
+                    forecast: forecastForPrompt
+                };
+
+                document.getElementById('chance-of-rain').textContent = `${rawWeatherData.forecast[0].pop}%`;
+                document.getElementById('weather-loading').classList.add('hidden');
+                document.getElementById('weather-content').classList.remove('hidden');
+                lucide.createIcons();
+                fetchActivityIdeas();
+
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                document.getElementById('weather-loading').textContent = 'Weather Unavailable';
+            }
         }
+
 
         function getWeatherIcon(iconCode) {
             switch(iconCode) {
@@ -1375,21 +1439,52 @@ Ensure the entire output is a single, valid JSON object.`;
         }
 
         // --- Gemini Q&A Modal Functions ---
+        function initializeGeminiChat() {
+            geminiChatHistory = [{
+                role: 'model',
+                parts: [{ text: "Hi! I'm here to help. You can ask me anything about science, animals, history, or homework." }]
+            }];
+            renderChatHistory();
+        }
+
+        function renderChatHistory() {
+            const answerContainer = document.getElementById('gemini-answer-container');
+            answerContainer.innerHTML = '';
+            geminiChatHistory.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${message.role === 'user' ? 'user-message' : 'model-message'}`;
+                messageDiv.innerHTML = `<p>${message.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+                answerContainer.appendChild(messageDiv);
+            });
+            const lastMessage = answerContainer.lastElementChild;
+            if (lastMessage) {
+                lastMessage.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+
         async function handleAskGemini() {
             const questionInput = document.getElementById('gemini-question-input');
-            const answerContainer = document.getElementById('gemini-answer-container');
             const submitButton = document.getElementById('submit-gemini-question');
             
             const question = questionInput.value.trim();
-            if (!question) {
-                answerContainer.innerHTML = '<p class="text-yellow-400">Please enter a question.</p>';
-                return;
-            }
+            if (!question) return;
+
+            // Add user message to history and render
+            geminiChatHistory.push({ role: 'user', parts: [{ text: question }] });
+            renderChatHistory();
+            questionInput.value = ''; // Clear input
 
             submitButton.disabled = true;
-            submitButton.innerHTML = '<div class="spinner w-4 h-4 mx-auto"></div>';
-            answerContainer.innerHTML = '<div class="flex items-center justify-center"><div class="spinner w-6 h-6"></div><p class="ml-2">Thinking...</p></div>';
-            lucide.createIcons();
+            submitButton.innerHTML = '<div class="spinner w-5 h-5"></div>';
+
+            // Add a thinking indicator
+            const answerContainer = document.getElementById('gemini-answer-container');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'chat-message model-message';
+            thinkingDiv.innerHTML = '<div class="spinner w-5 h-5"></div>';
+            answerContainer.appendChild(thinkingDiv);
+            thinkingDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+
 
             const safetyPrompt = `
                 You are a friendly, patient, and knowledgeable AI assistant for children.
@@ -1403,15 +1498,23 @@ Ensure the entire output is a single, valid JSON object.`;
                 - Keep your answers positive and encouraging.
             `;
             
+            // Prepend safety prompt to the first user message only
+            const conversationToSend = JSON.parse(JSON.stringify(geminiChatHistory));
+            if (conversationToSend.length === 2) { // First user message
+                conversationToSend[1].parts[0].text = safetyPrompt;
+            }
+
             try {
-                const answer = await callGemini(safetyPrompt);
-                answerContainer.innerHTML = `<p>${answer.replace(/\n/g, '<br>')}</p>`;
+                const response = await callCloudFunction('gemini', { chatHistory: conversationToSend });
+                const answer = response.candidates[0].content.parts[0].text;
+                geminiChatHistory.push({ role: 'model', parts: [{ text: answer }] });
             } catch (error) {
                 console.error("Error asking Gemini:", error);
-                answerContainer.innerHTML = '<p class="text-red-400">Sorry, I had trouble thinking of an answer. Please try again!</p>';
+                geminiChatHistory.push({ role: 'model', parts: [{ text: "Sorry, I had trouble thinking of an answer. Please try again!" }] });
             } finally {
+                renderChatHistory(); // Render the final response (or error)
                 submitButton.disabled = false;
-                submitButton.innerHTML = 'Get Answer';
+                submitButton.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i>';
                 lucide.createIcons();
             }
         }
@@ -1436,7 +1539,8 @@ Ensure the entire output is a single, valid JSON object.`;
             const prompt = `Generate a single, fun, and thought-provoking conversation starter question suitable for a family with children of various ages (8-17). The question should be open-ended and encourage imagination or sharing personal stories. Do not include any introductory text, just the question itself. ${exclusionPrompt}`;
 
             try {
-                const question = await callGemini(prompt);
+                const response = await callCloudFunction('gemini', { prompt: prompt });
+                const question = response.candidates[0].content.parts[0].text;
                 questionEl.textContent = question;
 
                 // Update history
@@ -1460,13 +1564,6 @@ Ensure the entire output is a single, valid JSON object.`;
             const openBtn = document.getElementById('mood-tracker-btn');
             const closeBtn = document.getElementById('close-feelings-modal');
             
-            const closeAndResetFeelingsModal = () => {
-                modalOverlay.style.display = 'none';
-                // Reset the view to name selection for the next time it opens
-                document.getElementById('wheel-view').classList.add('hidden');
-                document.getElementById('name-selection-view').classList.remove('hidden');
-            };
-
             openBtn.addEventListener('click', () => {
                 showNameSelection();
                 modalOverlay.style.display = 'flex';
@@ -1483,6 +1580,14 @@ Ensure the entire output is a single, valid JSON object.`;
 
             updateOverallMoodIcon();
         }
+        
+        function closeAndResetFeelingsModal() {
+            const modalOverlay = document.getElementById('feelings-modal-overlay');
+            modalOverlay.style.display = 'none';
+            // Reset the view to name selection for the next time it opens
+            document.getElementById('wheel-view').classList.add('hidden');
+            document.getElementById('name-selection-view').classList.remove('hidden');
+        };
 
         function getFamilyFeelings() {
             try {
@@ -1500,6 +1605,7 @@ Ensure the entire output is a single, valid JSON object.`;
             const title = document.getElementById('feelings-modal-title');
             
             nameView.innerHTML = '';
+            wheelView.innerHTML = ''; // Clear the wheel view
             nameView.classList.remove('hidden');
             wheelView.classList.add('hidden');
             title.textContent = 'How are you feeling?';
@@ -1587,18 +1693,18 @@ Ensure the entire output is a single, valid JSON object.`;
             };
             saveFamilyFeelings(familyFeelings);
             
-            // Close and reset the modal
-            const modalOverlay = document.getElementById('feelings-modal-overlay');
-            modalOverlay.style.display = 'none';
-            document.getElementById('wheel-view').classList.add('hidden');
-            document.getElementById('name-selection-view').classList.remove('hidden');
-
+            closeAndResetFeelingsModal();
             updateOverallMoodIcon();
+            showFeelingResponse(feeling, core);
         }
 
         function updateOverallMoodIcon() {
             const btnIcon = document.getElementById('overall-mood-icon');
-            if (!btnIcon) return;
+            const moodBtn = document.getElementById('mood-tracker-btn');
+            if (!btnIcon || !moodBtn) return;
+
+            // Reset colors
+            moodBtn.classList.remove('bg-green-500/30', 'bg-blue-500/30', 'bg-red-600/30');
 
             const familyFeelings = getFamilyFeelings();
             const feelingsArray = Object.values(familyFeelings);
@@ -1619,17 +1725,80 @@ Ensure the entire output is a single, valid JSON object.`;
 
             const averageValue = totalValue / feelingsArray.length;
             let overallIcon = 'smile';
+            let overallColorClass = 'bg-green-500/30';
+
             if (averageValue < 2.5) {
                 overallIcon = 'frown';
+                overallColorClass = 'bg-red-600/30';
             } else if (averageValue < 4) {
                 overallIcon = 'meh';
+                overallColorClass = 'bg-blue-500/30';
             }
 
             btnIcon.setAttribute('data-lucide', overallIcon);
+            moodBtn.classList.add(overallColorClass);
             lucide.createIcons();
         }
+        
+        // --- New Feeling Insight Functions ---
+        function initializeFeelingInsightModal() {
+            const modalOverlay = document.getElementById('feeling-insight-modal-overlay');
+            const closeBtn = document.getElementById('close-feeling-insight-modal');
 
+            closeBtn.addEventListener('click', () => {
+                modalOverlay.style.display = 'none';
+            });
+
+            modalOverlay.addEventListener('click', (event) => {
+                if (event.target === modalOverlay) {
+                    modalOverlay.style.display = 'none';
+                }
+            });
+        }
+
+        async function showFeelingResponse(feeling, coreEmotion) {
+            const modalOverlay = document.getElementById('feeling-insight-modal-overlay');
+            const titleEl = document.getElementById('feeling-insight-title');
+            const bodyEl = document.getElementById('feeling-insight-body');
+
+            titleEl.textContent = `Understanding "${feeling}"`;
+            bodyEl.innerHTML = `<div class="flex items-center justify-center"><div class="spinner w-8 h-8"></div><p class="ml-3 text-lg">Generating some helpful insight...</p></div>`;
+            modalOverlay.style.display = 'flex';
+            lucide.createIcons();
+
+            const prompt = `
+                Act as a helpful and empathetic family counselor using principles from emotional intelligence and cognitive behavioral therapy (CBT).
+                A person in a family context has identified their feeling as "${feeling}," which is part of the core emotion of "${coreEmotion}."
+
+                Please provide a response in JSON format that is simple, scientifically-backed, and suitable for a general audience including children (8+), teens, and adults. The tone should be reassuring and constructive.
+
+                The JSON object should contain two keys:
+                1. "explanation": A string that briefly and simply explains what this feeling is and a common reason why people experience it. (e.g., "Feeling hurt is a natural response when our feelings are dismissed or someone is unkind...")
+                2. "strategies": An array of at least two JSON objects, each with a "title" and a "description" for a simple, actionable, and positive coping strategy. (e.g., title: "Name The Feeling", description: "Simply saying 'I feel hurt because...' can help make the feeling less overwhelming.")
+            `;
+
+            try {
+                const response = await callCloudFunction('gemini', { prompt: prompt });
+                const insight = JSON.parse(response.candidates[0].content.parts[0].text);
+                let strategiesHTML = (insight.strategies || []).map(strategy => `
+                    <div class="mt-4">
+                        <h4 class="font-bold text-lg text-white/90">${strategy.title}</h4>
+                        <p class="text-white/80">${strategy.description}</p>
+                    </div>
+                `).join('');
+
+                bodyEl.innerHTML = `
+                    <p class="text-lg text-white/90">${insight.explanation}</p>
+                    <h3 class="text-xl font-semibold mt-6 mb-2 border-t border-white/20 pt-4">What you can do:</h3>
+                    ${strategiesHTML}
+                `;
+            } catch (error) {
+                console.error("Error fetching feeling insight:", error);
+                bodyEl.innerHTML = `<p class="text-red-400">Sorry, I had trouble generating an insight for that feeling. The most important thing is to be kind to yourself and talk to someone you trust about how you're feeling.</p>`;
+            }
+        }
 
     </script>
 </body>
 </html>
+
