@@ -424,6 +424,9 @@
             padding: 1.5rem;
             flex-grow: 1;
             overflow-y: auto;
+            /* New rule to ensure flex behavior within the body */
+            display: flex;
+            flex-direction: column;
         }
         .modal-footer {
             padding: 1rem 1.5rem;
@@ -677,14 +680,14 @@
 
             <!-- Verse of the Day -->
             <div id="verse" class="widget flex flex-col min-h-0">
-                 <div class="flex-grow flex flex-col justify-center">
-                    <blockquote id="verse-text" class="text-2xl italic text-shadow text-center">Loading verse...</blockquote>
-                    <cite id="verse-reference" class="block text-right text-lg mt-4 font-medium text-shadow"></cite>
-                </div>
-                <div id="verse-click-indicator" class="text-center text-xs text-white/50 mt-2 flex-shrink-0 flex items-center justify-center gap-1 hidden">
-                    <i data-lucide="book-open" class="w-3 h-3"></i>
-                    <span>Click for devotional and scripture context</span>
-                </div>
+                    <div class="flex-grow flex flex-col justify-center">
+                        <blockquote id="verse-text" class="text-2xl italic text-shadow text-center">Loading verse...</blockquote>
+                        <cite id="verse-reference" class="block text-right text-lg mt-4 font-medium text-shadow"></cite>
+                    </div>
+                    <div id="verse-click-indicator" class="text-center text-xs text-white/50 mt-2 flex-shrink-0 flex items-center justify-center gap-1 hidden">
+                        <i data-lucide="book-open" class="w-3 h-3"></i>
+                        <span>Click for devotional and scripture context</span>
+                    </div>
             </div>
         </div>
     </div>
@@ -747,7 +750,7 @@
     <!-- Feelings Wheel Modal -->
     <div id="feelings-modal-overlay" class="modal-overlay" style="display: none;">
         <div id="feelings-modal" class="modal-content">
-             <div class="modal-header flex justify-between items-center">
+              <div class="modal-header flex justify-between items-center">
                 <h2 id="feelings-modal-title" class="text-xl font-bold">How are you feeling?</h2>
                 <button id="close-feelings-modal" class="p-1 rounded-full hover:bg-white/10">
                     <i data-lucide="x" class="w-6 h-6"></i>
@@ -1014,6 +1017,20 @@
             }
         }
 
+        // --- NEW: Helper function to clean and parse JSON from Gemini's response ---
+        function cleanAndParseJson(rawText) {
+            const jsonStart = rawText.indexOf('{');
+            const jsonEnd = rawText.lastIndexOf('}') + 1;
+
+            if (jsonStart === -1 || jsonEnd === 0) {
+                throw new Error("No valid JSON object found in the response.");
+            }
+
+            // Extract the string that contains only the JSON object
+            const jsonString = rawText.substring(jsonStart, jsonEnd);
+            return JSON.parse(jsonString);
+        }
+
 
         async function fetchVerseOfTheDayFromGemini() {
             const verseTextEl = document.getElementById('verse-text');
@@ -1108,7 +1125,8 @@ Ensure the entire output is a single, valid JSON object.`;
 
             try {
                 const response = await callCloudFunction('gemini', { prompt: insightPrompt });
-                const insights = JSON.parse(response.candidates[0].content.parts[0].text);
+                // Use the new helper function to clean and parse the JSON
+                const insights = cleanAndParseJson(response.candidates[0].content.parts[0].text);
                 renderVerseCarousel(insights);
 
                 const todayKey = new Date().toISOString().slice(0, 10);
@@ -1218,11 +1236,12 @@ Ensure the entire output is a single, valid JSON object.`;
                 return; 
             }
             const weatherContext = `Today's forecast is: ${rawWeatherData.current.description}, feels like ${rawWeatherData.current.feels_like}°, with a temperature of ${rawWeatherData.current.temp}° and and humidity of ${rawWeatherData.current.humidity}%. The high for today will be ${rawWeatherData.forecast[0].maxTemp}° and the low will be ${rawWeatherData.forecast[0].minTemp}°. The chance of rain is ${rawWeatherData.forecast[0].pop}%. Sunrise is at ${rawWeatherData.current.sunrise} and sunset is at ${rawWeatherData.current.sunset}.`;
-            const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+            const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
             
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
-                const parsedJson = JSON.parse(response.candidates[0].content.parts[0].text);
+                // Use the new helper function to clean and parse the JSON
+                const parsedJson = cleanAndParseJson(response.candidates[0].content.parts[0].text);
 
                // Add this line to see the raw response
                 console.log("RAW GEMINI RESPONSE FOR ACTIVITIES:", response.candidates[0].content.parts[0].text);
@@ -1629,9 +1648,9 @@ Ensure the entire output is a single, valid JSON object.`;
                 }
 
                 button.innerHTML = `<div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg">${name}</span>
-                                        ${lastFeelingHTML}
-                                    </div>`;
+                                         <span class="font-bold text-lg">${name}</span>
+                                         ${lastFeelingHTML}
+                                     </div>`;
                 button.addEventListener('click', () => showWheelForPerson(name));
                 nameView.appendChild(button);
             });
@@ -1783,7 +1802,8 @@ Ensure the entire output is a single, valid JSON object.`;
 
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
-                const insight = JSON.parse(response.candidates[0].content.parts[0].text);
+                // Use the new helper function to clean and parse the JSON
+                const insight = cleanAndParseJson(response.candidates[0].content.parts[0].text);
                 let strategiesHTML = (insight.strategies || []).map(strategy => `
                     <div class="mt-4">
                         <h4 class="font-bold text-lg text-white/90">${strategy.title}</h4>
@@ -1805,4 +1825,5 @@ Ensure the entire output is a single, valid JSON object.`;
     </script>
 </body>
 </html>
+
 
