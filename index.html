@@ -30,7 +30,7 @@
 
         /* Dark Overlay for Readability */
         #background-overlay {
-            position: absolute;
+            position: absolute; 
             top: 0;
             left: 0;
             width: 100%;
@@ -1223,6 +1223,10 @@ Ensure the entire output is a single, valid JSON object.`;
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
                 const parsedJson = JSON.parse(response.candidates[0].content.parts[0].text);
+
+               // Add this line to see the raw response
+                console.log("RAW GEMINI RESPONSE FOR ACTIVITIES:", response.candidates[0].content.parts[0].text);
+
                 activityIdeas = parsedJson.activities || [];
                 if (activityIdeas.length > 0) {
                     renderActivityCarousel();
