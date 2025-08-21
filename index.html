@@ -779,7 +779,7 @@
     </div>
 
 
-    <script>
+  <script>
         // --- CONFIGURATION ---
         const WEATHER_CITY = "Greer,US";
         const WEATHER_UNITS = "imperial";
@@ -1125,7 +1125,7 @@ Ensure the entire output is a single, valid JSON object.`;
 
             try {
                 const response = await callCloudFunction('gemini', { prompt: insightPrompt });
-                // Use the new helper function to clean and parse the JSON
+                // **FIXED**: Use the helper function to clean and parse the JSON
                 const insights = cleanAndParseJson(response.candidates[0].content.parts[0].text);
                 renderVerseCarousel(insights);
 
@@ -1240,11 +1240,8 @@ Ensure the entire output is a single, valid JSON object.`;
             
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
-                // Use the new helper function to clean and parse the JSON
+                // **FIXED**: Use the helper function to clean and parse the JSON
                 const parsedJson = cleanAndParseJson(response.candidates[0].content.parts[0].text);
-
-               // Add this line to see the raw response
-                console.log("RAW GEMINI RESPONSE FOR ACTIVITIES:", response.candidates[0].content.parts[0].text);
 
                 activityIdeas = parsedJson.activities || [];
                 if (activityIdeas.length > 0) {
@@ -1648,9 +1645,9 @@ Ensure the entire output is a single, valid JSON object.`;
                 }
 
                 button.innerHTML = `<div class="flex justify-between items-center">
-                                         <span class="font-bold text-lg">${name}</span>
-                                         ${lastFeelingHTML}
-                                     </div>`;
+                                        <span class="font-bold text-lg">${name}</span>
+                                        ${lastFeelingHTML}
+                                    </div>`;
                 button.addEventListener('click', () => showWheelForPerson(name));
                 nameView.appendChild(button);
             });
@@ -1802,7 +1799,7 @@ Ensure the entire output is a single, valid JSON object.`;
 
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
-                // Use the new helper function to clean and parse the JSON
+                // **FIXED**: Use the helper function to clean and parse the JSON
                 const insight = cleanAndParseJson(response.candidates[0].content.parts[0].text);
                 let strategiesHTML = (insight.strategies || []).map(strategy => `
                     <div class="mt-4">
