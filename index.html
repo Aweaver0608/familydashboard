@@ -1212,7 +1212,7 @@ Ensure the entire output is a single, valid JSON object.`;
             nextButton.disabled = currentVerseInsightIndex >= verseInsights.length - 1;
         }
         
-        async function fetchActivityIdeas() {
+async function fetchActivityIdeas() {
             const refreshButton = document.getElementById('refresh-ideas');
             const insightTrack = document.getElementById('gemini-weather-insight-track');
             
@@ -1236,11 +1236,24 @@ Ensure the entire output is a single, valid JSON object.`;
                 return; 
             }
             const weatherContext = `Today's forecast is: ${rawWeatherData.current.description}, feels like ${rawWeatherData.current.feels_like}°, with a temperature of ${rawWeatherData.current.temp}° and and humidity of ${rawWeatherData.current.humidity}%. The high for today will be ${rawWeatherData.forecast[0].maxTemp}° and the low will be ${rawWeatherData.forecast[0].minTemp}°. The chance of rain is ${rawWeatherData.forecast[0].pop}%. Sunrise is at ${rawWeatherData.current.sunrise} and sunset is at ${rawWeatherData.current.sunset}.`;
-            const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+            
+            // --- THIS IS THE NEW, STRICTER PROMPT ---
+            const prompt = `
+You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}".
+
+Your task is to generate a list of 10 diverse ideas for fun family activities or local events.
+
+IMPORTANT: Your entire response MUST be a single, valid JSON object. Do not include any introductory text like "Here are some ideas...", Markdown formatting (\`\`\`json), or any other text outside of the JSON object itself.
+
+The JSON object must have a single root key called "activities". The value of "activities" must be an array of 10 JSON objects. Each object in the array must have two keys:
+1. "title" (a string)
+2. "description" (a string)
+
+Ensure a mix of creative, physical, quiet, local (free preferred), and adventurous activities. Do NOT include any information or suggestions about parental supervision in the response.
+            `;
             
             try {
                 const response = await callCloudFunction('gemini', { prompt: prompt });
-                // **FIXED**: Use the helper function to clean and parse the JSON
                 const parsedJson = cleanAndParseJson(response.candidates[0].content.parts[0].text);
 
                 activityIdeas = parsedJson.activities || [];
