@@ -272,7 +272,8 @@ body {
         #weather-icon-container {
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
+            align-items: center;
+            width: 100%;
         }
         #weather-icon {
             width: 6rem; /* Increased from 4rem */
