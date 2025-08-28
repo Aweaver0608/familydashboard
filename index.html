@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Family Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Performance Improvement: Preconnect to external domains -->
+    <link rel="preconnect" href="https://api.weather.gov" crossorigin>
+    <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden; /* Prevents scrollbars on body */
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+            /* Dynamic background styling, will be updated by JS */
+            background-size: cover;
+            background-position: center;
+            transition: background-image 1s ease-in-out; /* Smooth transition for background image */
+        }
+
+        /* Dark Overlay for Readability */
+        #background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.25); /* Semi-transparent black overlay */
+            z-index: -1;
+        }
+
+        /* Main content grid */
+        #dashboard-grid {
+            display: grid;
+            grid-template-columns: 50% 50%; /* Enforce equal split between left and right columns */
+            gap: 1.5rem; /* Space between columns */
+            height: 100vh; /* Full viewport height */
+            width: 100vw; /* Full viewport width */
+        }
+
+        /* Apply 2-column grid for medium screens and up */
+        @media (min-width: 768px) {
+            #dashboard-grid {
+                grid-template-columns: 1fr 1fr; /* Two equal columns */
+            }
+        }
+
+        /* Glassmorphism effect for containers */
+        .widget {
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem; /* 16px */
+            padding: 1.5rem; /* 24px */
+            /* Ensure widgets within flex containers can properly flex/grow */
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow content to shrink within bounds */
+        }
+        .text-shadow {
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+        
+        /* Standard Gemini Button (for modals, etc.) */
+        .gemini-btn {
+            background-color: #4285F4;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .gemini-btn:hover:not(:disabled) {
+            background-color: #357ae8;
+        }
+        .gemini-btn:disabled {
+            background-color: #9ca3af; /* Tailwind gray-400 */
+            cursor: not-allowed;
+        }
+
+        /* New Glassmorphism Button Style */
+        .glass-btn {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 9999px; /* rounded-full */
+            padding: 0.5rem 1rem;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+        }
+        .glass-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+        }
+        .glass-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        /* Custom style for the refresh calendar button to make it blend better */
+        #refresh-calendar {
+            background-color: rgba(0, 0, 0, 0.3); /* Slightly transparent dark background */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle white border */
+            color: white;
+            padding: 0.5rem 0.75rem; /* Adjusted padding */
+            border-radius: 0.5rem; /* Rounded corners */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        #refresh-calendar:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.1); /* Lighter on hover */
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        #refresh-calendar:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+
+        .spinner {
+            width: 30px; /* Larger spinner for background loading */
+            height: 30px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Carousel Styles */
+        .carousel-container {
+            position: relative;
+            overflow: hidden; /* Prevent content overflow */
+            height: 100%;
+        }
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+            width: 100%;
+        }
+        .carousel-slide {
+            flex: 0 0 100%;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 0 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            white-space: normal; /* Allow text to wrap */
+            word-wrap: break-word; /* Break long words */
+            overflow-wrap: break-word; /* Ensure text wraps properly */
+        }
+        
+        .carousel-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0.25rem;
+            z-index: 10;
+        }
+        .carousel-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .carousel-button.left { left: 0px; }
+        .carousel-button.right { right: 0px; }
+
+        /* Custom Scrollbar */
+        .scrollable-content {
+            flex-grow: 1;
+            overflow-y: auto; /* Allow vertical scrolling for long content */
+            scrollbar-width: thin; /* Thin scrollbar for better aesthetics */
+            scrollbar-color: rgba(255,255,255,0.4) rgba(255,255,255,0.1);
+        }
+        .scrollable-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .scrollable-content::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+        }
+
+        /* Adjusting column heights for calendar and other widgets */
+        .main-left-column,
+        .main-right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between widgets */
+            height: 100%; /* Full height of the grid */
+            overflow: hidden; /* Prevent content overflow */
+        }
+        
+        /* Use flex shorthand to enforce proportions */
+        #calendar.widget {
+            flex: 4 1 0%;
+            overflow: hidden;
+        }
+        #conversation-starter.widget {
+            flex: 2 1 0%;
+        }
+        #weather.widget {
+            flex: 4 1 0%;
+            overflow: hidden;
+        }
+        #verse.widget {
+            flex: 2 1 0%;
+            overflow: hidden;
+            cursor: default; /* Default cursor */
+        }
+        #verse.widget.clickable {
+            cursor: pointer; /* Clickable cursor when insights are loaded */
+        }
+
+
+        /* --- Weather Layout Styles --- */
+        #weather-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            flex-grow: 1; /* Allow content to fill widget */
+        }
+        #current-conditions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: center;
+            gap: 1rem;
+            text-align: left;
+        }
+        #weather-details {
+            font-size: 1.125rem; /* text-lg */
+            line-height: 1.6;
+        }
+        #weather-main {
+            text-align: center;
+        }
+        #weather-temp {
+            font-size: 5rem; /* text-7xl */
+            font-weight: 700; /* bold */
+            line-height: 1;
+        }
+        #weather-description {
+            font-size: 1.125rem; /* text-lg */
+            text-transform: capitalize;
+            margin-top: -0.25rem;
+        }
+        #weather-icon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        #weather-icon {
+            width: 6rem; /* Increased from 4rem */
+            height: 6rem; /* Increased from 4rem */
+            display: inline-block;
+        }
+        #chance-of-rain-container {
+            font-size: 1rem; /* text-base */
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        #sunrise-sunset {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 0.5rem;
+        }
+        .forecast-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 0.5rem;
+        }
+        .forecast-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0rem;
+            font-size: 1rem; /* text-xs */
+        }
+        .forecast-item .day-name {
+            font-weight: 600; /* semibold */
+        }
+        .forecast-item .temp-range {
+            font-weight: 500; /* medium */
+        }
+        #activity-suggestions-container {
+            flex-shrink: 0;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100px; /* Ensure a minimum height */
+            position: relative;
+            margin-top: 0.5rem;
+        }
+
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #dashboard-grid {
+                grid-template-columns: 1fr; /* Single column on mobile */
+                height: auto; /* Allow height to auto-adjust for stacked content */
+                overflow-y: auto; /* Allow scrolling on mobile */
+            }
+            .main-left-column,
+            .main-right-column {
+                height: auto; 
+                overflow: visible;
+            }
+            #calendar.widget, #weather.widget, #verse.widget, #conversation-starter.widget {
+                height: auto; 
+                flex-grow: 0;
+            }
+            #calendar-iframe {
+                min-height: 400px; 
+            }
+            .carousel-slide {
+                padding: 0 1rem; 
+            }
+            #weather-temp {
+                font-size: 4rem; 
+            }
+            #weather-description {
+                font-size: 1.5rem; 
+            }
+            .text-shadow {
+                text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5); 
+            }
+            #time-date {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            #refresh-calendar {
+                margin-top: 0.5rem;
+                align-self: flex-end; 
+            }
+            .forecast-row {
+                justify-content: flex-start;
+                gap: 1rem;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+            .forecast-item {
+                flex-shrink: 0;
+            }
+        }
+
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: rgba(20, 20, 20, 0.5);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1.5rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .modal-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* --- Gemini Chat Modal Styles --- */
+        #gemini-chat-modal .modal-body {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        #gemini-answer-container {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .chat-message {
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .user-message {
+            background-color: #4285F4;
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            align-self: flex-end;
+        }
+        .model-message {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 0.25rem;
+            align-self: flex-start;
+        }
+        #gemini-input-area {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #gemini-question-input {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: white;
+            resize: none;
+        }
+        #submit-gemini-question {
+            flex-shrink: 0;
+        }
+
+
+        /* --- Floating Action Buttons --- */
+        #open-gemini-modal {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 1.5rem;
+            z-index: 50;
+            padding: 1rem;
+        }
+        #open-prayer-modal {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 50;
+            padding: 1rem;
+        }
+        
+        #open-gemini-modal span, #open-prayer-modal span {
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            #open-gemini-modal span, #open-prayer-modal span {
+                display: inline;
+            }
+        }
+
+        /* --- Feelings Wheel Modal Styles --- */
+        #feelings-modal .modal-content {
+            max-width: 95vw;
+            width: 800px;
+            max-height: 90vh;
+        }
+        #name-selection-view .name-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color: 0.2s;
+        }
+        #name-selection-view .name-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        #wheel-view {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .core-emotion-group .group-header {
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        .core-emotion-group .group-header:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .core-emotion-group .group-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .core-emotion-group .group-header .chevron {
+            transition: transform 0.3s ease-in-out;
+        }
+        .core-emotion-group .group-header.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .feelings-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+            padding: 0.75rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+        .feelings-list.open {
+            max-height: 500px; /* Arbitrary large number */
+        }
+
+        .feeling-btn {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        .feeling-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        /* --- Prayer Request Modal Styles --- */
+        .prayer-request-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+        .prayer-request-item.answered {
+            border-left: 4px solid #4ade80; /* green-400 */
+        }
+        .prayer-request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .prayer-request-body {
+            margin-top: 0.5rem;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        .prayer-answer {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .prayer-answer p {
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .form-input, .form-select {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: white;
+            transition: border-color 0.2s;
+            color: white; /* Ensure text is visible */
+            background-color: #000000; /* Change this to your desired background color */
+        }
+        .form-select option {
+            background-color: #000000; /* A dark gray for the options */
+            color: white;
+        }
+        .form-input.error {
+            border-color: #f87171; /* red-400 */
+        }
+
+        /* Add this CSS to your <style> section or stylesheet */
+        .pulse {
+          animation: pulse-animation 1s infinite;
+        }
+        @keyframes pulse-animation {
+          0% { box-shadow: 0 0 0 0 rgba(0, 150, 255, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(0, 150, 255, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(0, 150, 255, 0); }
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+
+    <div id="background-overlay"></div>
+
+    <div id="dashboard-grid" class="p-6">
+        
+        <div class="flex flex-col gap-6 min-h-0 main-left-column">
+            <!-- Time and Date -->
+            <div id="time-date" class="flex items-end justify-between flex-shrink-0">
+                <div class="flex items-baseline gap-3">
+                    <h2 id="date" class="text-3xl font-medium text-shadow"></h2>
+                    <h1 id="time" class="text-6xl font-bold text-shadow -mb-2"></h1>
+                    <span id="ampm" class="text-3xl font-semibold text-shadow -mb-2"></span>
+                </div>
+                <button id="refresh-calendar" class="text-sm px-3 py-1">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Calendar
+                </button>
+            </div>
+
+            <!-- Calendar -->
+            <div id="calendar" class="widget flex flex-col p-0 overflow-hidden">
+                <iframe id="calendar-iframe" src="https://calendar.google.com/calendar/embed?src=wksest2015%40gmail.com&ctz=America%2FNew_York&mode=AGENDA" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+
+            <!-- Conversation Starter Widget -->
+            <div id="conversation-starter" class="widget flex flex-col">
+                <div>
+                    <h3 class="text-lg font-semibold text-white/80 mb-2">Conversation Starter ✨</h3>
+                    <p id="starter-question" class="text-xl text-center font-medium leading-snug">Loading question...</p>
+                </div>
+                <button id="refresh-starter" class="glass-btn self-center mt-4">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> New Question
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-6 min-h-0 main-right-column">
+            <!-- Weather -->
+            <div id="weather" class="widget flex flex-col">
+                <div id="weather-loading" class="flex-grow flex items-center justify-center text-2xl text-shadow">Loading weather...</div>
+                <div id="weather-content" class="hidden">
+                    <!-- Top Section: Current Conditions -->
+                    <div class="flex-shrink-0">
+                        <div id="current-conditions-grid">
+                            <div id="weather-details" class="text-shadow">
+                                <div>High: <span id="temp-high"></span></div>
+                                <div>Low: <span id="temp-low"></span></div>
+                                <div>Feels like: <span id="feels-like"></span></div>
+                                <div>Humidity: <span id="humidity"></span></div>
+                            </div>
+                            <div id="weather-main" class="text-shadow">
+                                <p id="weather-temp"></p>
+                                <p id="weather-description"></p>
+                            </div>
+                            <div id="weather-icon-container" class="text-shadow">
+                                <img id="weather-icon" src="" alt="Current weather icon">
+                                <div id="chance-of-rain-container">
+                                    <img src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
+                                    <span id="chance-of-rain"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sunrise/Sunset Removed as it's not easily available from NWS API -->
+                    </div>
+
+                    <!-- Middle Section: Forecasts -->
+                    <div class="flex-shrink-0">
+                        <div id="hourly-forecast" class="forecast-row"></div>
+                        <div id="weather-forecast" class="forecast-row"></div>
+                    </div>
+
+                    <!-- Bottom Section: Gemini Activity Suggestions -->
+                    <div id="activity-suggestions-container">
+                        <div class="carousel-container">
+                            <div id="gemini-weather-insight-track" class="carousel-track">
+                                <div class="carousel-slide">
+                                    <div class="flex items-center justify-center w-full">
+                                        <span class="text-lg">✨ Loading personalized activity ideas...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="prev-idea" class="carousel-button left hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                            <button id="next-idea" class="carousel-button right hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                        </div>
+                        <div id="carousel-controls" class="absolute top-0 left-0 flex items-center gap-2">
+                            <span id="idea-counter" class="text-xs bg-black/40 px-2 py-1 rounded-md hidden"></span>
+                            <button id="refresh-ideas" class="p-1 bg-black/40 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verse of the Day -->
+            <div id="verse" class="widget flex flex-col min-h-0">
+                 <div class="flex-grow flex flex-col justify-center">
+                    <blockquote id="verse-text" class="text-2xl italic text-shadow text-center">Loading verse...</blockquote>
+                    <cite id="verse-reference" class="block text-right text-lg mt-4 font-medium text-shadow"></cite>
+                </div>
+                <div id="verse-click-indicator" class="text-center text-xs text-white/50 mt-2 flex-shrink-0 flex items-center justify-center gap-1 hidden">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Click for devotional and scripture context</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Buttons -->
+    <!--<button id="open-gemini-modal" class="glass-btn">
+        <i data-lucide="sparkles" class="w-6 h-6"></i>
+        <span>Ask Gemini</span>
+    </button>-->
+<button id="open-gemini-modal" class="glass-btn">
+    <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65 65" class="w-6 h-6">
+        <mask id="maskme" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="65" height="65"><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="#000"/><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="url(#prefix__paint0_linear_2001_67)"/></mask><g mask="url(#maskme)"><g filter="url(#prefix__filter0_f_2001_67)"><path d="M-5.859 50.734c7.498 2.663 16.116-2.33 19.249-11.152 3.133-8.821-.406-18.131-7.904-20.794-7.498-2.663-16.116 2.33-19.25 11.151-3.132 8.822.407 18.132 7.905 20.795z" fill="#FFE432"/></g><g filter="url(#prefix__filter1_f_2001_67)"><path d="M27.433 21.649c10.3 0 18.651-8.535 18.651-19.062 0-10.528-8.35-19.062-18.651-19.062S8.78-7.94 8.78 2.587c0 10.527 8.35 19.062 18.652 19.062z" fill="#FC413D"/></g><g filter="url(#prefix__filter2_f_2001_67)"><path d="M20.184 82.608c10.753-.525 18.918-12.244 18.237-26.174-.68-13.93-9.95-24.797-20.703-24.271C6.965 32.689-1.2 44.407-.519 58.337c.681 13.93 9.95 24.797 20.703 24.271z" fill="#00B95C"/></g><g filter="url(#prefix__filter3_f_2001_67)"><path d="M20.184 82.608c10.753-.525 18.918-12.244 18.237-26.174-.68-13.93-9.95-24.797-20.703-24.271C6.965 32.689-1.2 44.407-.519 58.337c.681 13.93 9.95 24.797 20.703 24.271z" fill="#00B95C"/></g><g filter="url(#prefix__filter4_f_2001_67)"><path d="M30.954 74.181c9.014-5.485 11.427-17.976 5.389-27.9-6.038-9.925-18.241-13.524-27.256-8.04-9.015 5.486-11.428 17.977-5.39 27.902 6.04 9.924 18.242 13.523 27.257 8.038z" fill="#00B95C"/></g><g filter="url(#prefix__filter5_f_2001_67)"><path d="M67.391 42.993c10.132 0 18.346-7.91 18.346-17.666 0-9.757-8.214-17.667-18.346-17.667s-18.346 7.91-18.346 17.667c0 9.757 8.214 17.666 18.346 17.666z" fill="#3186FF"/></g><g filter="url(#prefix__filter6_f_2001_67)"><path d="M-13.065 40.944c9.33 7.094 22.959 4.869 30.442-4.972 7.483-9.84 5.987-23.569-3.343-30.663C4.704-1.786-8.924.439-16.408 10.28c-7.483 9.84-5.986 23.57 3.343 30.664z" fill="#FBBC04"/></g><g filter="url(#prefix__filter7_f_2001_67)"><path d="M34.74 51.43c11.135 7.656 25.896 5.524 32.968-4.764 7.073-10.287 3.779-24.832-7.357-32.488C49.215 6.52 34.455 8.654 27.382 18.94c-7.072 10.288-3.779 24.833 7.357 32.49z" fill="#3186FF"/></g><g filter="url(#prefix__filter8_f_2001_67)"><path d="M54.984-2.336c2.833 3.852-.808 11.34-8.131 16.727-7.324 5.387-15.557 6.631-18.39 2.78-2.833-3.853.807-11.342 8.13-16.728 7.324-5.387 15.558-6.631 18.39-2.78z" fill="#749BFF"/></g><g filter="url(#prefix__filter9_f_2001_67)"><path d="M31.727 16.104C43.053 5.598 46.94-8.626 40.41-15.666c-6.53-7.04-21.006-4.232-32.332 6.274s-15.214 24.73-8.683 31.77c6.53 7.04 21.006 4.232 32.332-6.274z" fill="#FC413D"/></g><g filter="url(#prefix__filter10_f_2001_67)"><path d="M8.51 53.838c6.732 4.818 14.46 5.55 17.262 1.636 2.802-3.915-.384-10.994-7.116-15.812-6.731-4.818-14.46-5.55-17.261-1.636-2.802 3.915.383 10.994 7.115 15.812z" fill="#FFEE48"/></g></g><defs><filter id="prefix__filter0_f_2001_67" x="-19.824" y="13.152" width="39.274" height="43.217" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="2.46" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter1_f_2001_67" x="-15.001" y="-40.257" width="84.868" height="85.688" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="11.891" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter2_f_2001_67" x="-20.776" y="11.927" width="79.454" height="90.916" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter3_f_2001_67" x="-20.776" y="11.927" width="79.454" height="90.916" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter4_f_2001_67" x="-19.845" y="15.459" width="79.731" height="81.505" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter5_f_2001_67" x="29.832" y="-11.552" width="75.117" height="73.758" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="9.606" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter6_f_2001_67" x="-38.583" y="-16.253" width="78.135" height="78.758" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="8.706" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter7_f_2001_67" x="8.107" y="-5.966" width="78.877" height="77.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="7.775" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter8_f_2001_67" x="13.587" y="-18.488" width="56.272" height="51.81" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="6.957" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter9_f_2001_67" x="-15.526" y="-31.297" width="70.856" height="69.306" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5.876" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter10_f_2001_67" x="-14.168" y="20.964" width="55.501" height="51.571" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="7.273" result="effect1_foregroundBlur_2001_67"/></filter><linearGradient id="prefix__paint0_linear_2001_67" x1="18.447" y1="43.42" x2="52.153" y2="15.004" gradientUnits="userSpaceOnUse"><stop stop-color="#4893FC"/><stop offset=".27" stop-color="#4893FC"/><stop offset=".777" stop-color="#969DFF"/><stop offset="1" stop-color="#BD99FE"/></linearGradient></defs></svg>
+    <span>Ask Gemini</span>
+</button>
+
+<button id="open-prayer-modal" class="glass-btn">
+    <span class="text-2xl">🙏🏼</span>
+    <span>Prayer Requests</span>
+</button>
+
+    <!-- Mood Tracker Button -->
+    <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <i id="overall-mood-icon" data-lucide="smile" class="w-16 h-16"></i>
+    </button>
+
+    <!-- Gemini Q&A Modal -->
+    <div id="gemini-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="gemini-chat-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold">Ask a Question!</h2>
+                <button id="close-gemini-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="gemini-answer-container" class="scrollable-content">
+                    <!-- Chat messages will be appended here -->
+                </div>
+                <div id="gemini-input-area">
+                    <textarea id="gemini-question-input" rows="1" placeholder="Ask anything..."></textarea>
+                    <button id="submit-gemini-question" class="gemini-btn">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verse Devotional Modal -->
+    <div id="verse-devotional-modal-overlay" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold">Verse Insights</h2>
+                <button id="close-verse-devotional-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="carousel-container h-full">
+                     <div id="gemini-verse-insight-track" class="carousel-track">
+                         <!-- Content will be injected by JS -->
+                     </div>
+                     <button id="prev-verse-insight" class="carousel-button left hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                     <button id="next-verse-insight" class="carousel-button right hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feelings Wheel Modal -->
+    <div id="feelings-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="feelings-modal" class="modal-content">
+             <div class="modal-header flex justify-between items-center">
+                <h2 id="feelings-modal-title" class="text-xl font-bold">How are you feeling?</h2>
+                <button id="close-feelings-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <div id="name-selection-view"></div>
+                <div id="wheel-view" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feeling Insight Modal -->
+    <div id="feeling-insight-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="feeling-insight-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 id="feeling-insight-title" class="text-xl font-bold">Understanding Your Feeling</h2>
+                <button id="close-feeling-insight-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="feeling-insight-body" class="modal-body scrollable-content">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Prayer Request Modal -->
+    <div id="prayer-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="prayer-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 id="prayer-modal-title" class="text-xl font-bold">Family Prayer Requests</h2>
+                <button id="close-prayer-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <!-- Main View: Lists of prayers -->
+                <div id="prayer-list-view">
+                    <p class="text-white/70 italic text-sm">Click on a prayer request to edit it.</p>
+                    <h3 class="text-lg font-semibold mb-2">Current Requests</h3>
+                    <div id="current-requests-list"><p class="text-white/50">Loading requests...</p></div>
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Answered Prayers</h3>
+                    <div id="answered-prayers-list"><p class="text-white/50">No answered prayers yet.</p></div>
+                </div>
+                <!-- Add New Request Form -->
+                <div id="add-prayer-form-view" class="hidden">
+                    <h3 class="text-lg font-semibold mb-4">Add a New Prayer Request</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="prayer-requester-name" class="block mb-1 text-sm font-medium">Your Name</label>
+                            <select id="prayer-requester-name" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="prayer-request-text" class="block mb-1 text-sm font-medium">Prayer Request</label>
+                            <textarea id="prayer-request-text" rows="4" class="form-input" placeholder="What can we pray for?"></textarea>
+                        </div>
+                    </div>
+                </div>
+                 <!-- Add Answer Form -->
+                <div id="answer-prayer-form-view" class="hidden">
+                     <h3 class="text-lg font-semibold mb-4">How was this prayer answered?</h3>
+                     <div class="space-y-4">
+                         <p class="prayer-request-body bg-black/20 p-3 rounded-lg" id="original-request-for-answer"></p>
+                         <input type="hidden" id="edit-prayer-id">
+                         <div>
+                             <label for="prayer-answer-text" class="block mb-1 text-sm font-medium">Answer to Prayer</label>
+                             <textarea id="prayer-answer-text" rows="4" class="form-input" placeholder="Describe how God answered this prayer..."></textarea>
+                         </div>
+                     </div>
+                </div>
+            </div>
+            <div class="modal-footer flex justify-end gap-3">
+                <button id="cancel-prayer-request-btn" class="gemini-btn bg-gray-500 hover:bg-gray-600 hidden">Cancel</button>
+                <button id="submit-prayer-request-btn" class="gemini-btn hidden">Submit Request</button>
+                <button id="update-prayer-request-btn" class="gemini-btn hidden">Update Request</button>
+                <button id="submit-prayer-answer-btn" class="gemini-btn hidden">Submit Answer</button>
+                <button id="add-new-prayer-request-btn" class="gemini-btn">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Add New
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ADD FIREBASE SDKs HERE -->
+    <script type="module">
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' 
+            ? __firebase_config 
+            : `{
+                "apiKey": "AIzaSyCCkWPlomvz31ucHdP9ydzugNkSZ-87vIc",
+                "authDomain": "familydashboard-b803e.firebaseapp.com",
+                "projectId": "familydashboard-b803e",
+                "storageBucket": "familydashboard-b803e.appspot.com",
+                "messagingSenderId": "846068242540",
+                "appId": "1:846068242540:web:df72ef9971337b0a40a049"
+            }`;
+        const firebaseConfig = JSON.parse(firebaseConfigStr);
+
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // --- PRAYER REQUEST LOGIC ---
+        let prayerRequestsUnsubscribe = null; // To hold the listener
+        let currentPrayerDocId = null; // To hold the ID of the prayer being answered
+
+        async function initializePrayerRequests() {
+            const openBtn = document.getElementById('open-prayer-modal');
+            const closeBtn = document.getElementById('close-prayer-modal');
+            const modalOverlay = document.getElementById('prayer-modal-overlay');
+            const addNewBtn = document.getElementById('add-new-prayer-request-btn');
+            const cancelBtn = document.getElementById('cancel-prayer-request-btn');
+            const submitRequestBtn = document.getElementById('submit-prayer-request-btn');
+            const submitAnswerBtn = document.getElementById('submit-prayer-answer-btn');
+
+            openBtn.addEventListener('click', () => {
+                modalOverlay.style.display = 'flex';
+                showPrayerListView(); // This ensures the initial view is correct
+            });
+            closeBtn.addEventListener('click', () => {
+                modalOverlay.style.display = 'none';
+                showPrayerListView(); // Reset view on close
+            });
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    modalOverlay.style.display = 'none';
+                    showPrayerListView(); // Reset view on close
+                }
+            });
+
+            addNewBtn.addEventListener('click', showAddRequestView);
+            cancelBtn.addEventListener('click', showPrayerListView);
+            submitRequestBtn.addEventListener('click', handleAddPrayerRequest);
+            submitAnswerBtn.addEventListener('click', handleAddPrayerAnswer);
+
+            try {
+                // **FIX:** Force anonymous sign-in for this specific project, ignoring environment tokens.
+                await signInAnonymously(auth);
+                listenForPrayerRequests(); // Attach listener AFTER successful sign-in
+            } catch (error) {
+                console.error("Anonymous sign-in failed.", error);
+            }
+        }
+
+        function listenForPrayerRequests() {
+            const prayerCollection = collection(db, "prayerRequests");
+            const q = query(prayerCollection, orderBy("requestedAt", "desc"));
+
+            prayerRequestsUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                const allPrayers = [];
+                querySnapshot.forEach((doc) => {
+                    allPrayers.push({ id: doc.id, ...doc.data() });
+                });
+                renderPrayerLists(allPrayers);
+                // Add this line to trigger the pulse animation if there are recent requests
+                checkRecentPrayerRequests(allPrayers);
+            }, (error) => {
+                console.error("Error listening for prayer requests:", error);
+                document.getElementById('current-requests-list').innerHTML = `<p class="text-red-400">Could not load requests. Check security rules.</p>`;
+            });
+        }
+        
+        function renderPrayerLists(prayers) {
+            const currentList = document.getElementById('current-requests-list');
+            const answeredList = document.getElementById('answered-prayers-list');
+            currentList.innerHTML = '';
+            answeredList.innerHTML = '';
+
+            const currentPrayers = prayers.filter(p => p.status === 'current');
+            const answeredPrayers = prayers.filter(p => p.status === 'answered');
+
+            if (currentPrayers.length === 0) {
+                currentList.innerHTML = `<p class="text-white/50">No current prayer requests.</p>`;
+            } else {
+                currentPrayers.forEach(p => currentList.appendChild(createPrayerItem(p)));
+            }
+
+            if (answeredPrayers.length === 0) {
+                answeredList.innerHTML = `<p class="text-white/50">No answered prayers yet.</p>`;
+            } else {
+                answeredPrayers.forEach(p => answeredList.appendChild(createPrayerItem(p)));
+            }
+            lucide.createIcons();
+        }
+
+        function createPrayerItem(prayer) {
+            const item = document.createElement('div');
+            item.className = `prayer-request-item ${prayer.status === 'answered' ? 'answered' : ''}`;
+            
+            const requestedDate = prayer.requestedAt?.toDate().toLocaleDateString() || 'Someday';
+
+            let answerHTML = '';
+            if (prayer.status === 'answered') {
+                const answeredDate = prayer.answeredAt?.toDate().toLocaleDateString() || 'Recently';
+                answerHTML = `
+                    <div class="prayer-answer">
+                        <span class="font-semibold text-green-400">Answered on ${answeredDate}:</span>
+                        <p>${prayer.answerText}</p>
+                    </div>
+                `;
+            }
+
+            let actionButtonHTML = '';
+            if (prayer.status === 'current') {
+                actionButtonHTML = `<button data-id="${prayer.id}" class="answer-btn gemini-btn bg-green-600 hover:bg-green-700 text-xs py-1 px-2">Answered!</button>`;
+            }
+            
+            //Make the entire item clickable to edit the prayer request
+            item.innerHTML = `
+                <div class="prayer-request-header">
+                    <span class="font-bold">${prayer.name}</span>
+                    <span class="text-right">${requestedDate}</span>
+                </div>
+                <p class="prayer-request-body">${prayer.requestText}</p>
+                ${answerHTML}
+                <div class="text-right mt-2">${actionButtonHTML}</div>
+            `;
+            
+            const answerBtn = item.querySelector('.answer-btn');
+            item.addEventListener('click', () => showEditRequestView(prayer));
+            if (answerBtn) {
+                answerBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    showAnswerRequestView(prayer.id, prayer.requestText);
+                });
+            }
+
+            return item;
+        }
+
+        function showPrayerListView() {
+            document.getElementById('prayer-list-view').classList.remove('hidden');
+            document.getElementById('add-prayer-form-view').classList.add('hidden');
+            document.getElementById('update-prayer-request-btn').classList.add('hidden');
+            document.getElementById('answer-prayer-form-view').classList.add('hidden');
+            document.getElementById('add-new-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('cancel-prayer-request-btn').classList.add('hidden');
+            document.getElementById('submit-prayer-request-btn').classList.add('hidden');
+            document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+            document.getElementById('prayer-modal-title').textContent = 'Family Prayer Requests';
+            document.getElementById('edit-prayer-id').value = '';
+        }
+
+        function showAddRequestView() {
+            document.getElementById('prayer-list-view').classList.add('hidden');
+            document.getElementById('add-prayer-form-view').classList.remove('hidden');
+            document.getElementById('update-prayer-request-btn').classList.add('hidden');
+            document.getElementById('add-new-prayer-request-btn').classList.add('hidden');
+            document.getElementById('submit-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+            document.getElementById('prayer-modal-title').textContent = 'Add a Request';
+
+            const nameSelect = document.getElementById('prayer-requester-name');
+            nameSelect.innerHTML = FAMILY_MEMBERS.map(name => `<option value="${name}">${name}</option>`).join('');
+            nameSelect.selectedIndex = 0;
+            document.getElementById('prayer-request-text').value = '';
+            document.getElementById('edit-prayer-id').value = '';
+        }
+
+        function showEditRequestView(prayer) {
+            document.getElementById('prayer-list-view').classList.add('hidden');
+            document.getElementById('add-prayer-form-view').classList.remove('hidden');
+            document.getElementById('submit-prayer-request-btn').classList.add('hidden');
+            document.getElementById('update-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('add-new-prayer-request-btn').classList.add('hidden');
+            document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+            document.getElementById('prayer-modal-title').textContent = 'Edit Request';
+
+            const nameSelect = document.getElementById('prayer-requester-name');
+            nameSelect.innerHTML = FAMILY_MEMBERS.map(name => `<option value="${name}" ${name === prayer.name ? 'selected' : ''}>${name}</option>`).join('');
+            const requestTextarea = document.getElementById('prayer-request-text');
+            requestTextarea.value = prayer.requestText;
+
+            // Store the prayer ID in a hidden field for the update function
+            const prayerIdInput = document.getElementById('edit-prayer-id');
+            prayerIdInput.value = prayer.id;
+        }
+
+        function showAnswerRequestView(docId, requestText) {
+            currentPrayerDocId = docId;
+            document.getElementById('prayer-list-view').classList.add('hidden');
+            document.getElementById('answer-prayer-form-view').classList.remove('hidden');
+            document.getElementById('add-prayer-form-view').classList.add('hidden');
+            document.getElementById('add-new-prayer-request-btn').classList.add('hidden');
+            document.getElementById('submit-prayer-answer-btn').classList.remove('hidden');
+            document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
+            document.getElementById('submit-prayer-request-btn').classList.add('hidden');
+            document.getElementById('update-prayer-request-btn').classList.add('hidden');
+            document.getElementById('prayer-modal-title').textContent = 'Answer a Prayer';
+            document.getElementById('original-request-for-answer').textContent = requestText;
+            document.getElementById('prayer-answer-text').value = '';
+            document.getElementById('edit-prayer-id').value = '';
+        }
+
+        async function handleAddPrayerRequest() {
+            const requestInput = document.getElementById('prayer-request-text');
+            const requestText = requestInput.value.trim();
+            const name = document.getElementById('prayer-requester-name').value;
+            
+            if (!requestText) {
+                console.warn("Prayer request text cannot be empty.");
+                requestInput.classList.add('error');
+                setTimeout(() => requestInput.classList.remove('error'), 2000);
+                return;
+            }
+            try {
+                await addDoc(collection(db, "prayerRequests"), {
+                    name: name,
+                    requestText: requestText,
+                    requestedAt: serverTimestamp(),
+                    status: 'current',
+                    answerText: null,
+                    answeredAt: null
+                });
+                showPrayerListView();
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+
+        async function handleUpdateRequest() {
+            const requestInput = document.getElementById('prayer-request-text');
+            const requestText = requestInput.value.trim();
+            const name = document.getElementById('prayer-requester-name').value;
+            const prayerId = document.getElementById('edit-prayer-id').value;
+
+            if (!requestText) {
+                console.warn("Prayer request text cannot be empty.");
+                requestInput.classList.add('error');
+                setTimeout(() => requestInput.classList.remove('error'), 2000);
+                return;
+            }
+
+            try {
+                const prayerDocRef = doc(db, "prayerRequests", prayerId);
+                await updateDoc(prayerDocRef, {
+                    name: name,
+                    requestText: requestText,
+                    //Do NOT update requestedAt
+                });
+                showPrayerListView();
+            } catch (e) {
+                console.error("Error updating document: ", e);
+            
+            }
+        }
+        
+        async function handleAddPrayerAnswer() {
+            const answerInput = document.getElementById('prayer-answer-text');
+            const answerText = answerInput.value.trim();
+             if (!answerText || !currentPrayerDocId) {
+                console.error("Answer text or document ID is missing.");
+                 if (!answerText) {
+                     answerInput.classList.add('error');
+                     setTimeout(() => answerInput.classList.remove('error'), 2000);
+                 }
+                return;
+            }
+            const prayerDocRef = doc(db, "prayerRequests", currentPrayerDocId);
+            try {
+                await updateDoc(prayerDocRef, {
+                    status: 'answered',
+                    answerText: answerText,
+                    answeredAt: serverTimestamp()
+                });
+                showPrayerListView();
+                currentPrayerDocId = null; // Reset
+            } catch (e) {
+                console.error("Error updating document: ", e);
+            }
+        }
+
+        // Add this to your main startup function
+        document.addEventListener('DOMContentLoaded', initializePrayerRequests);
+
+        const updateRequestBtn = document.getElementById('update-prayer-request-btn');
+        updateRequestBtn.addEventListener('click', handleUpdateRequest);
+    </script>
+
+    <script>
+        // --- CONFIGURATION ---
+        // The Gemini API key is securely provided by the environment.
+        const GEMINI_API_KEY = "AIzaSyAX6HEd5kZBFjzsNn4wixNv3-Ah3yILRl0";
+        const WEATHER_CITY_DETAILS = {
+            name: "Greer,US",
+            lat: 34.9368,
+            lon: -82.2243
+        };
+        const FAMILY_MEMBERS = ["Andrew", "Jenna", "Olivia", "Malia", "Kaci", "Declan", "Halle", "Liam"];
+        
+        const FEELINGS_WHEEL = {
+            "Joyful": {
+                icon: 'smile', value: 5, color: 'bg-yellow-500/50',
+                feelings: ["Hopeful", "Energetic", "Creative", "Excited", "Passionate", "Enthusiastic", "Amused", "Delighted", "Optimistic", "Cheerful", "Daring", "Successful"]
+            },
+            "Strong": {
+                icon: 'smile', value: 5, color: 'bg-green-500/50',
+                feelings: ["Worthy", "Appreciated", "Respected", "Proud", "Confident", "Faithful", "Assured", "Inspired", "Caring", "Fulfilled", "Motivated", "Valuable"]
+            },
+            "Calm": {
+                icon: 'meh', value: 4, color: 'bg-blue-500/50',
+                feelings: ["Trusting", "Loving", "Present", "Relaxed", "Peaceful", "Comfortable", "Safe", "Content", "Serene", "Grounded"]
+            },
+            "Scared": {
+                icon: 'frown', value: 2, color: 'bg-orange-500/50',
+                feelings: ["Insecure", "Helpless", "Hopeless", "Anxious", "Rejected", "Confused", "Nervous", "Overwhelmed"]
+            },
+            "Sad": {
+                icon: 'frown', value: 2, color: 'bg-indigo-500/50',
+                feelings: ["Uncaring", "Hopeless", "Ashamed", "Depressed", "Miserable", "Desolate", "Guilty", "Stupid", "Lonely", "Bored", "Tired", "Sleepy"]
+            },
+            "Mad": {
+                icon: 'angry', value: 1, color: 'bg-red-600/50',
+                feelings: ["Hurt", "Worried", "Embarrassed", "Vulnerable", "Annoyed", "Defensive", "Sarcastic", "Frustrated", "Jealous", "Hostile", "Selfish", "Angry", "Critical", "Rattled"]
+            }
+        };
+
+
+        // Static image URLs
+        const WEATHER_IMAGES = {
+            "clear sky": "https://images.pexels.com/photos/912364/pexels-photo-912364.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "few clouds": "https://images.pexels.com/photos/96622/pexels-photo-96622.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "scattered clouds": "https://images.pexels.com/photos/86695/pexels-photo-86695.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "broken clouds": "https://images.pexels.com/photos/695657/pexels-photo-695657.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "overcast clouds": "https://images.pexels.com/photos/8318263/pexels-photo-8318263.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "light rain": "https://images.pexels.com/photos/1529360/pexels-photo-1529360.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "moderate rain": "https://images.pexels.com/photos/459451/pexels-photo-459451.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "heavy intensity rain": "https://images.pexels.com/photos/2748716/pexels-photo-2748716.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "shower rain": "https://images.pexels.com/photos/1530423/pexels-photo-1530423.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "rain": "https://images.pexels.com/photos/1529360/pexels-photo-1529360.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "drizzle": "https://images.pexels.com/photos/1529360/pexels-photo-1529360.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "thunderstorm": "https://images.pexels.com/photos/1154510/pexels-photo-1154510.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "snow": "https://images.pexels.com/photos/954710/pexels-photo-954710.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "mist": "https://images.pexels.com/photos/163323/fog-dawn-landscape-morgenstimmung-163323.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "fog": "https://images.pexels.com/photos/163323/fog-dawn-landscape-morgenstimmung-163323.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920",
+            "default": "https://images.pexels.com/photos/1431822/pexels-photo-1431822.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1080&w=1920"
+        };
+
+        const NLT_VERSES_FOR_DAY = [
+            { text: "For I know the plans I have for you,” says the Lord. “They are plans for good and not for disaster, to give you a future and a hope.", reference: "Jeremiah 29:11 NLT" },
+            { text: "Fearing people is a dangerous trap, but trusting the Lord means safety.", reference: "Proverbs 29:25 NLT" },
+        ];
+
+        // --- Global State Variables ---
+        let currentVerse = {};
+        let rawWeatherData = null;
+        let activityIdeas = [];
+        let verseInsights = [];
+        let currentIdeaIndex = 0;
+        let currentVerseInsightIndex = 0;
+        const VERSE_HISTORY_LENGTH = 365;
+        let selectedPersonForMood = null;
+        let geminiChatHistory = [];
+
+
+        // --- JSON Schemas for Gemini ---
+        const verseInsightSchema = {
+            type: "OBJECT",
+            properties: {
+                "devotional": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "title": { "type": "STRING" },
+                        "story": { "type": "STRING" },
+                        "big_idea": { "type": "STRING" },
+                        "application_questions": { "type": "ARRAY", "items": { "type": "STRING" } },
+                        "prayer": { "type": "STRING" }
+                    },
+                    "required": ["title", "story", "big_idea", "application_questions", "prayer"]
+                },
+                "context": { "type": "STRING" }
+            },
+            required: ["devotional", "context"]
+        };
+
+        const activitySchema = {
+            type: "OBJECT",
+            properties: {
+                "activities": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": { "title": { "type": "STRING" }, "description": { "type": "STRING" } },
+                        "required": ["title", "description"]
+                    }
+                }
+            }, 
+            "required": ["activities"]
+        };
+        
+        const feelingInsightSchema = {
+            type: "OBJECT",
+            properties: {
+                "explanation": { "type": "STRING" },
+                "strategies": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "title": { "type": "STRING" },
+                            "description": { "type": "STRING" }
+                        },
+                        "required": ["title", "description"]
+                    }
+                }
+            },
+            required: ["explanation", "strategies"]
+        };
+
+        // --- APPLICATION LOGIC ---
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                updateTime();
+                initializeDashboard();
+                initializeFeelingsWheel();
+                initializeFeelingInsightModal();
+            
+                document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
+                document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
+                document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
+                document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
+                document.getElementById('next-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex + 1));
+                document.getElementById('refresh-calendar').addEventListener('click', () => {
+                    document.getElementById('calendar-iframe').src = document.getElementById('calendar-iframe').src; 
+                });
+                document.getElementById('refresh-starter').addEventListener('click', fetchConversationStarter);
+
+                // --- Modal Listeners ---
+                const geminiModalOverlay = document.getElementById('gemini-modal-overlay');
+                document.getElementById('open-gemini-modal').addEventListener('click', () => {
+                    geminiModalOverlay.style.display = 'flex';
+                    initializeGeminiChat();
+                    lucide.createIcons(); 
+                });
+                document.getElementById('close-gemini-modal').addEventListener('click', () => {
+                    geminiModalOverlay.style.display = 'none';
+                });
+                geminiModalOverlay.addEventListener('click', (event) => {
+                    if (event.target === geminiModalOverlay) {
+                        geminiModalOverlay.style.display = 'none';
+                    }
+                });
+                document.getElementById('submit-gemini-question').addEventListener('click', handleAskGemini);
+                document.getElementById('gemini-question-input').addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        handleAskGemini();
+                    }
+                });
+
+
+                // --- Verse Devotional Modal Listeners ---
+                const verseWidget = document.getElementById('verse');
+                const verseDevotionalModalOverlay = document.getElementById('verse-devotional-modal-overlay');
+                const closeVerseDevotionalModalBtn = document.getElementById('close-verse-devotional-modal');
+
+                verseWidget.addEventListener('click', () => {
+                    if (verseInsights.length > 0) {
+                        verseDevotionalModalOverlay.style.display = 'flex';
+                        lucide.createIcons();
+                    }
+                });
+
+                closeVerseDevotionalModalBtn.addEventListener('click', () => {
+                    verseDevotionalModalOverlay.style.display = 'none';
+                });
+
+                verseDevotionalModalOverlay.addEventListener('click', (event) => {
+                    if (event.target === verseDevotionalModalOverlay) {
+                        verseDevotionalModalOverlay.style.display = 'none';
+                    }
+                });
+                
+                setInterval(updateTime, 1000);
+                setInterval(fetchWeather, 600000);
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error("Critical error on startup:", error);
+                document.body.innerHTML = `<div class="w-screen h-screen flex justify-center items-center text-2xl">A critical error occurred. Please refresh.</div>`;
+            }
+        });
+
+        async function initializeDashboard() {
+            await fetchWeather(); // This already triggers activity ideas
+            await scheduleDailyVerseUpdate();
+            await fetchConversationStarter();
+        }
+
+        async function scheduleDailyVerseUpdate() {
+            const now = new Date();
+            const midnight = new Date(now);
+            midnight.setHours(24, 0, 0, 0); 
+            const msUntilMidnight = midnight.getTime() - now.getTime();
+            await fetchVerseOfTheDayFromGemini(); 
+            setTimeout(() => {
+                setInterval(fetchVerseOfTheDayFromGemini, 24 * 60 * 60 * 1000);
+            }, msUntilMidnight);
+        }
+        
+        // --- Gemini API Functions ---
+        async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
+             const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY; //Use environment api key if available
+             if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
+                 console.error("Gemini API key is missing.");
+                 throw new Error("Gemini API key is missing.");
+             }
+
+             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            
+             let lastError = null;
+             // Exponential backoff with retries
+             for (let i = 0; i < 4; i++) {
+                 try {
+                     const payload = { contents: chatHistory };
+                     if (responseSchema) {
+                         payload.generationConfig = {
+                             responseMimeType: "application/json",
+                             responseSchema: responseSchema
+                         };
+                     }
+
+                     const response = await fetch(apiUrl, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(payload)
+                     });
+
+                     // Check for rate limiting or server overload and retry
+                     if (response.status === 429 || response.status === 503) {
+                         lastError = new Error(`API call failed with status: ${response.status}`);
+                         if (i === 3) { // Last attempt
+                             throw lastError;
+                         }
+                         // Exponential backoff with jitter
+                         const delay = Math.pow(2, i) * 1000 + Math.random() * 100;
+                         await new Promise(resolve => setTimeout(resolve, delay));
+                         continue; // Retry the loop
+                     }
+
+                     if (!response.ok) {
+                         throw new Error(`API call failed with status: ${response.status}`);
+                     }
+                    
+                     const result = await response.json();
+                    
+                     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                         const responseText = result.candidates[0].content.parts[0].text;
+                         if (responseSchema) {
+                             try {
+                                 return JSON.parse(responseText);
+                             } catch (e) {
+                                 throw new Error("Invalid JSON response from API.");
+                             }
+                         }
+                         return responseText; // Success
+                     } else {
+                          throw new Error(`No content received from API. Finish reason: ${result.candidates?.[0]?.finishReason}`);
+                     }
+                 } catch (error) {
+                     lastError = error;
+                     if (i === 3) { // Only log the final error
+                         console.error(`An error occurred after multiple API call attempts:`, error);
+                     }
+                 }
+             }
+             // If all retries fail, throw the last captured error
+             throw lastError;
+        }
+
+        async function fetchVerseOfTheDayFromGemini() {
+            const verseTextEl = document.getElementById('verse-text');
+            const verseRefEl = document.getElementById('verse-reference');
+            
+            const todayKey = new Date().toISOString().slice(0, 10); 
+            const cachedData = localStorage.getItem('verseData');
+            const lastVerseDate = localStorage.getItem('lastVerseDate');
+
+            if (lastVerseDate === todayKey && cachedData) {
+                console.log("Loading verse and insights from localStorage for today.");
+                const data = JSON.parse(cachedData);
+                currentVerse = data.verse;
+                verseTextEl.textContent = currentVerse.text;
+                verseRefEl.textContent = currentVerse.reference;
+                renderVerseCarousel(data.insights);
+                return; 
+            }
+
+            verseTextEl.textContent = "Generating verse...";
+            verseRefEl.textContent = "";
+
+            try {
+                let verseHistory = getVerseHistory();
+                const versesToExclude = verseHistory.slice(Math.max(0, 150)); 
+                let exclusionInstruction = versesToExclude.length > 0 ? ` Ensure the verse reference is NOT one of these: ${versesToExclude.join(', ')}.` : "";
+                const versePrompt = `Provide one inspirational Bible verse from the NLT (New Living Translation), including its reference. Try to select a verse that is not extremely common and that can easily be used for inspiration or to give wisdom for future or present issues.${exclusionInstruction} Format it strictly as 'VERSE_TEXT (Book Chapter:Verse NLT)' with no extra commentary or formatting.`;
+                
+                const geminiVerseResponse = await callGemini([{ parts: [{ text: versePrompt }] }]);
+                
+                const strictMatch = geminiVerseResponse.match(/(.*)\s\(([^)]+)\sNLT\)/i);
+                if (!strictMatch) throw new Error("Verse response format was incorrect.");
+                
+                const [_, text, reference] = strictMatch;
+                currentVerse = { text: text.trim(), reference: `${reference.trim()} NLT` };
+                addVerseToHistory(currentVerse.reference); 
+
+                verseTextEl.textContent = currentVerse.text;
+                verseRefEl.textContent = currentVerse.reference;
+
+                generateAndDisplayVerseInsights(currentVerse); // Pass the new verse directly
+
+            } catch (error) {
+                console.error("Error fetching verse of the day from Gemini:", error);
+                verseTextEl.textContent = `Failed to load verse. Falling back to a local one.`;
+                verseRefEl.textContent = "Error";
+                updateVerseFromLocalList(); 
+            }
+        }
+
+        function getVerseHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('verseHistory') || '[]');
+            } catch (e) { return []; }
+        }
+
+        function addVerseToHistory(verseReference) {
+            let history = getVerseHistory();
+            const normalizedNewRef = verseReference.replace(/ NLT/i, '').trim();
+            history = history.filter(ref => ref.replace(/ NLT/i, '').trim() !== normalizedNewRef); 
+            history.push(verseReference); 
+            if (history.length > VERSE_HISTORY_LENGTH) {
+                history.shift();
+            }
+            localStorage.setItem('verseHistory', JSON.stringify(history));
+        }
+        
+        async function generateAndDisplayVerseInsights(verseToAnalyze) {
+            const track = document.getElementById('gemini-verse-insight-track');
+            if(track) track.innerHTML = `<div class="carousel-slide flex items-center justify-center w-full h-full"><div class="spinner"></div><span class="ml-2">Loading...</span></div>`;
+
+            if (!verseToAnalyze || !verseToAnalyze.text) {
+                if (track) track.innerHTML = `<div class="carousel-slide text-center p-4"><p>Verse not loaded. Cannot get insights.</p></div>`;
+                return;
+            }
+
+            const insightPrompt = `
+Act as a theologian and Bible scholar who is skilled at making deep biblical truths accessible to children.
+Based on the Bible verse "${verseToAnalyze.text}" (${verseToAnalyze.reference}), generate a JSON object with two main keys: "devotional" and "context".
+
+1.  The "context" key should contain a string with historically accurate information simplified for a child (age 8+). Explain who wrote it, to whom, and the situation, focusing on what was happening that makes the verse's message important.
+
+2.  The "devotional" key should contain a JSON object with the following keys:
+    * "title": A short, catchy title for the devotional that captures the main theme.
+    * "story": Instead of a fictional story, briefly explain the theological principle of the verse. If possible, use a real, brief example from another Bible character who lived out this truth (e.g., how David trusted God, how Paul showed perseverance).
+    * "big_idea": A single sentence summarizing the core theological truth or promise of the verse.
+    * "application_questions": An array of 2-3 short, relatable questions that connect the theological truth to a child's life.
+    * "prayer": A short, simple prayer a child can say that reflects the theme of the verse.
+
+Ensure the entire output is a single, valid JSON object.`;
+
+            try {
+                const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], "gemini-2.5-flash", verseInsightSchema);
+                renderVerseCarousel(insights);
+
+                const todayKey = new Date().toISOString().slice(0, 10);
+                localStorage.setItem('lastVerseDate', todayKey);
+                localStorage.setItem('verseData', JSON.stringify({ verse: verseToAnalyze, insights: insights }));
+
+            } catch (error) {
+                console.error("Failed to fetch consolidated insights:", error);
+                if (track) track.innerHTML = `<div class="carousel-slide p-4 text-center">Could not load insights.</div>`;
+            }
+        }
+
+        function renderVerseCarousel(insights) {
+            const track = document.getElementById('gemini-verse-insight-track');
+            const verseWidget = document.getElementById('verse');
+            const indicator = document.getElementById('verse-click-indicator');
+            if (!track) return;
+            track.innerHTML = ''; 
+
+            verseInsights = [];
+            
+            if (insights?.devotional) {
+                const dev = insights.devotional;
+                let devotionalContent = `
+                    <div class="p-4 text-left">
+                        <h5 class="font-semibold text-lg mb-2">${dev.title}</h5>
+                        <p class="text-base mb-4">${dev.story}</p>
+                        <h5 class="font-semibold text-lg mb-2">The Big Idea</h5>
+                        <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
+                        <h5 class="font-semibold text-lg mb-2">Think About It</h5>
+                        <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}</div>
+                        <h5 class="font-semibold text-lg mb-2">Prayer</h5>
+                        <p class="text-base mb-4">${dev.prayer}</p>
+                    </div>
+                `;
+                verseInsights.push({ title: 'Devotional', content: devotionalContent });
+            }
+
+            if (insights?.context) {
+                let contextContent = `
+                    <div class="p-4 text-left">
+                        <h5 class="font-semibold text-lg mb-2">What was happening?</h5>
+                        <p class="text-base">${insights.context}</p>
+                    </div>
+                `;
+                verseInsights.push({ title: 'Context', content: contextContent });
+            }
+
+            verseInsights.forEach(insight => {
+                const slide = document.createElement('div');
+                slide.className = 'carousel-slide';
+                slide.innerHTML = `<div class="scrollable-content h-full w-full">${insight.content}</div>`;
+                track.appendChild(slide);
+            });
+            
+            showVerseInsight(0);
+            const prevBtn = document.getElementById('prev-verse-insight');
+            const nextBtn = document.getElementById('next-verse-insight');
+            if (verseInsights.length > 1) {
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+            }
+
+            // Show indicator and make widget clickable
+            if (indicator) indicator.classList.remove('hidden');
+            if (verseWidget) verseWidget.classList.add('clickable');
+            lucide.createIcons();
+        }
+
+        function showVerseInsight(index) {
+            const track = document.getElementById('gemini-verse-insight-track');
+            const prevButton = document.getElementById('prev-verse-insight');
+            const nextButton = document.getElementById('next-verse-insight');
+            if (!track || !prevButton || !nextButton || !verseInsights || verseInsights.length === 0) return;
+            if (index < 0 || index >= verseInsights.length) return;
+            
+            currentVerseInsightIndex = index;
+            track.style.transform = `translateX(-${currentVerseInsightIndex * 100}%)`;
+            prevButton.disabled = currentVerseInsightIndex === 0;
+            nextButton.disabled = currentVerseInsightIndex >= verseInsights.length - 1;
+        }
+        
+        async function fetchActivityIdeas() {
+            const refreshButton = document.getElementById('refresh-ideas');
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            
+            if (refreshButton) {
+                refreshButton.disabled = true;
+                refreshButton.innerHTML = '<div class="spinner w-4 h-4"></div>';
+            }
+            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide flex items-center justify-center text-center"><span class="text-lg">✨ Loading personalized activity ideas...</span></div>`; 
+            
+            document.getElementById('prev-idea').classList.add('hidden');
+            document.getElementById('next-idea').classList.add('hidden');
+            document.getElementById('idea-counter').classList.add('hidden');
+
+            if (!rawWeatherData) { 
+                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Weather data not yet available.</p></div>`; 
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i>';
+                }
+                lucide.createIcons();
+                return; 
+            }
+            const weatherContext = `Today's forecast is: ${rawWeatherData.current.description}, with a temperature of ${rawWeatherData.current.temp}°. The high for today will be ${rawWeatherData.forecast[0].maxTemp}° and the low will be ${rawWeatherData.forecast[0].minTemp}°. The chance of rain is ${rawWeatherData.forecast[0].pop}%.`;
+            const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+            
+            try {
+                const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], "gemini-2.5-flash", activitySchema);
+                activityIdeas = parsedJson.activities || [];
+                if (activityIdeas.length > 0) {
+                    renderActivityCarousel();
+                } else {
+                    if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API for weather:", error);
+                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now due to an API error.</p></div>`;
+            } finally {
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i>';
+                }
+                lucide.createIcons();
+            }
+        }
+
+        function renderActivityCarousel() {
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            if (!insightTrack) return;
+
+            insightTrack.innerHTML = ''; 
+            activityIdeas.forEach(idea => {
+                const slide = document.createElement('div');
+                slide.className = 'carousel-slide flex flex-col items-center justify-center text-center'; 
+                slide.innerHTML = `
+                    <h4 class="font-bold text-lg">${idea.title}</h4>
+                    <div class="scrollable-content" style="max-height: 150px; overflow-y: auto;">
+                        <p class="text-sm mt-1">${idea.description}</p>
+                    </div>
+                `;
+                insightTrack.appendChild(slide);
+            });
+
+            if (activityIdeas.length > 1) {
+                document.getElementById('prev-idea').classList.remove('hidden');
+                document.getElementById('next-idea').classList.remove('hidden');
+                document.getElementById('idea-counter').classList.remove('hidden');
+            }
+            document.getElementById('refresh-ideas').classList.remove('hidden');
+            showActivityIdea(0);
+        }
+
+        function showActivityIdea(index) {
+            const track = document.getElementById('gemini-weather-insight-track');
+            const counter = document.getElementById('idea-counter');
+            const prevButton = document.getElementById('prev-idea');
+            const nextButton = document.getElementById('next-idea'); 
+            if (!track || !counter || !prevButton || !nextButton || !activityIdeas || activityIdeas.length === 0) return; 
+            if (index < 0 || index >= activityIdeas.length) return;
+            currentIdeaIndex = index;
+            track.style.transform = `translateX(-${currentIdeaIndex * 100}%)`;
+            counter.textContent = `${currentIdeaIndex + 1} / ${activityIdeas.length}`;
+            prevButton.disabled = currentIdeaIndex === 0;
+            nextButton.disabled = currentIdeaIndex === activityIdeas.length - 1;
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeEl = document.getElementById('time');
+            const ampmEl = document.getElementById('ampm');
+            const dateEl = document.getElementById('date');
+            if (!timeEl || !dateEl || !ampmEl) return;
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            ampmEl.textContent = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            timeEl.textContent = `${formattedHours}:${minutes}`;
+            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+        
+        async function updateStaticBackground(weatherDescription) {
+            const bodyElement = document.body;
+            const normalizedWeatherDescription = weatherDescription.toLowerCase();
+            const imageUrl = WEATHER_IMAGES[normalizedWeatherDescription] || WEATHER_IMAGES.default;
+            
+            const img = new Image();
+            img.src = imageUrl;
+            img.onload = () => {
+                bodyElement.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${imageUrl}')`;
+            };
+            img.onerror = () => {
+                bodyElement.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${WEATHER_IMAGES.default}')`;
+            };
+        }
+        
+        function updateVerseFromLocalList() { 
+            const today = new Date();
+            const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+            currentVerse = NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length];
+            
+            document.getElementById('verse-text').textContent = currentVerse.text;
+            document.getElementById('verse-reference').textContent = currentVerse.reference;
+            generateAndDisplayVerseInsights(currentVerse);
+        }
+
+        async function fetchWeather() {
+            const { lat, lon } = WEATHER_CITY_DETAILS;
+            const pointsUrl = `https://api.weather.gov/points/${lat},${lon}`;
+            const headers = { 'User-Agent': '(FamilyDashboard, your-contact-email@example.com)' };
+
+            try {
+                // Step 1: Fetch the grid endpoints from the points URL
+                const pointsResponse = await fetch(pointsUrl, { headers });
+                if (!pointsResponse.ok) throw new Error(`NWS points lookup failed: ${pointsResponse.status}`);
+                const pointsData = await pointsResponse.json();
+                
+                const forecastUrl = pointsData.properties.forecast;
+                const hourlyForecastUrl = pointsData.properties.forecastHourly;
+
+                // Step 2: Fetch both forecast and hourly forecast data
+                const [forecastResponse, hourlyForecastResponse] = await Promise.all([
+                    fetch(forecastUrl, { headers }),
+                    fetch(hourlyForecastUrl, { headers })
+                ]);
+
+                if (!forecastResponse.ok) throw new Error(`NWS forecast fetch failed: ${forecastResponse.status}`);
+                if (!hourlyForecastResponse.ok) throw new Error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status}`);
+
+                const forecastData = await forecastResponse.json();
+                const hourlyData = await hourlyForecastResponse.json();
+
+                // Step 3: Process and display the data
+                const dailyPeriods = forecastData.properties.periods;
+                const hourlyPeriods = hourlyData.properties.periods;
+
+                // Current conditions from the first hourly period
+                const currentConditions = hourlyPeriods[0];
+                document.getElementById('weather-temp').textContent = `${currentConditions.temperature}°`;
+                document.getElementById('weather-description').textContent = currentConditions.shortForecast;
+                document.getElementById('humidity').textContent = `${currentConditions.relativeHumidity.value}%`;
+                // NWS doesn't provide a "feels like" temp, so we'll use the actual temp
+                document.getElementById('feels-like').textContent = `${currentConditions.temperature}°`;
+
+                // High/Low from the first daily period
+                const todayForecast = dailyPeriods[0];
+                document.getElementById('temp-high').textContent = `${todayForecast.temperature}°`;
+                // Find the next period that is a "night" period for the low
+                const tonightForecast = dailyPeriods.find(p => p.isDaytime === false);
+                if(tonightForecast) {
+                    document.getElementById('temp-low').textContent = `${tonightForecast.temperature}°`;
+                }
+                
+                // Set main icon
+                document.getElementById('weather-icon').src = getWeatherIcon(todayForecast.shortForecast, todayForecast.isDaytime);
+                updateStaticBackground(todayForecast.shortForecast);
+
+                // Chance of rain
+                const chanceOfRain = todayForecast.probabilityOfPrecipitation.value || 0;
+                document.getElementById('chance-of-rain').textContent = `${chanceOfRain}%`;
+
+                // Hourly forecast: start with the next upcoming hour
+                const hourlyForecastContainer = document.getElementById('hourly-forecast');
+                hourlyForecastContainer.innerHTML = '';
+                const now = new Date();
+                // Find the first hour that is after now
+                const nextHours = hourlyPeriods.filter(h => new Date(h.startTime) > now).slice(0, 12);
+                nextHours.forEach(hour => {
+                    const hourWrapper = document.createElement('div');
+                    hourWrapper.className = 'forecast-item';
+                    hourWrapper.innerHTML = `
+                        <p class="font-semibold" style="margin-bottom:-0.75rem;">${new Date(hour.startTime).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(' ', '')}</p>
+                        <div class="flex flex-col items-center justify-center">
+                            <img class="w-12 h-12 my-1" src="${getWeatherIcon(hour.shortForecast, hour.isDaytime)}" alt="Hourly forecast icon">
+                            <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${hour.temperature}°</span>
+                        </div>
+                        <div class="flex items-center gap-0.5 text-xs">
+                            <img src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
+                            <span>${hour.probabilityOfPrecipitation.value || 0}%</span>
+                        </div>`;
+                    hourlyForecastContainer.appendChild(hourWrapper);
+                });
+
+                // Daily forecast
+                const forecastContainerEl = document.getElementById('weather-forecast');
+                forecastContainerEl.innerHTML = '';
+                const uniqueDays = {};
+                dailyPeriods.forEach(period => {
+                    const dayName = new Date(period.startTime).toLocaleDateString('en-US', { weekday: 'short' });
+                    if (!uniqueDays[dayName]) {
+                        uniqueDays[dayName] = { high: -Infinity, low: Infinity, pop: 0, icon: '', isDaytime: true };
+                    }
+                    if (period.isDaytime) {
+                        uniqueDays[dayName].high = Math.max(uniqueDays[dayName].high, period.temperature);
+                        uniqueDays[dayName].icon = getWeatherIcon(period.shortForecast, period.isDaytime);
+                    } else {
+                        uniqueDays[dayName].low = Math.min(uniqueDays[dayName].low, period.temperature);
+                    }
+                    uniqueDays[dayName].pop = Math.max(uniqueDays[dayName].pop, period.probabilityOfPrecipitation.value || 0);
+                });
+                
+                // Calculate average high-low difference from previous days
+                const forecastDays = Object.entries(uniqueDays).slice(1, 8);
+                let diffs = [];
+                forecastDays.forEach(([_, d]) => {
+                    if (d.low !== Infinity && d.high !== -Infinity) {
+                        diffs.push(d.high - d.low);
+                    }
+                });
+                const avgDiff = diffs.length ? Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length) : 0;
+
+                forecastDays.forEach(([dayName, data], idx) => {
+                    const dayWrapper = document.createElement('div');
+                    dayWrapper.className = 'forecast-item';
+                    let lowDisplay;
+                    if (data.low === Infinity) {
+                        // Estimate low using average difference
+                        lowDisplay = (data.high !== -Infinity && avgDiff > 0) ? (data.high - avgDiff) : '--';
+                    } else {
+                        lowDisplay = data.low;
+                    }
+                    dayWrapper.innerHTML = `
+                        <p class="day-name" style="font-size:1.25rem; font-weight:700; margin-bottom:-0.75rem;">${dayName}</p>
+                        <div class="flex flex-col items-center justify-center">
+                            <img class="w-12 h-12 my-1" src="${data.icon}" alt="Daily forecast icon">
+                            <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${data.high}°/${lowDisplay}°</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-xs">
+                            <img class="w-5 h-5" src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" alt="Umbrella icon">
+                            <span>${data.pop}%</span>
+                        </div>`;
+                    forecastContainerEl.appendChild(dayWrapper);
+                });
+
+
+                document.getElementById('weather-loading').classList.add('hidden');
+                document.getElementById('weather-content').classList.remove('hidden');
+
+                // Prepare data for Gemini prompt
+                rawWeatherData = {
+                    current: {
+                        temp: currentConditions.temperature,
+                        description: currentConditions.shortForecast,
+                    },
+                    forecast: [{
+                        maxTemp: todayForecast.temperature,
+                        minTemp: tonightForecast ? tonightForecast.temperature : todayForecast.temperature,
+                        pop: chanceOfRain
+                    }]
+                };
+                fetchActivityIdeas();
+
+            } catch (error) {
+                console.error('Error fetching NWS weather data:', error);
+                document.getElementById('weather-loading').textContent = 'Weather Unavailable';
+            }
+        }
+
+        function getWeatherIcon(shortForecast, isDaytime) {
+            const forecast = shortForecast.toLowerCase();
+            let iconName = '';
+
+            if (forecast.includes('thunderstorm')) {
+                iconName = 'thunderstorms';
+            } else if (forecast.includes('snow')) {
+                iconName = 'snow';
+            } else if (forecast.includes('rain') || forecast.includes('drizzle') || forecast.includes('showers')) {
+                if (forecast.includes('partly') || forecast.includes('chance') || forecast.includes('likely')) {
+                    iconName = isDaytime ? 'partly-cloudy-day-rain' : 'partly-cloudy-night-rain';
+                } else {
+                    iconName = 'rain';
+                }
+            } else if (forecast.includes('overcast')) {
+                iconName = 'overcast';
+            } else if (forecast.includes('cloudy')) {
+                iconName = 'cloudy';
+            } else if (forecast.includes('partly') || forecast.includes('mostly clear')) {
+                iconName = isDaytime ? 'partly-cloudy-day' : 'partly-cloudy-night';
+            } else if (forecast.includes('sunny') || forecast.includes('clear')) {
+                iconName = isDaytime ? 'clear-day' : 'clear-night';
+            } else if (forecast.includes('fog') || forecast.includes('mist')) {
+                iconName = 'mist';
+            } else {
+                iconName = isDaytime ? 'clear-day' : 'clear-night'; // Default
+            }
+            
+            return `https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/${iconName}.svg`;
+        }
+
+        // --- Gemini Q&A Modal Functions ---
+        function initializeGeminiChat() {
+            geminiChatHistory = [{
+                role: 'model',
+                parts: [{ text: "Hi! I'm here to help. You can ask me anything about science, animals, history, or homework." }]
+            }];
+            renderChatHistory();
+        }
+
+        function renderChatHistory() {
+            const answerContainer = document.getElementById('gemini-answer-container');
+            answerContainer.innerHTML = '';
+            geminiChatHistory.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${message.role === 'user' ? 'user-message' : 'model-message'}`;
+                messageDiv.innerHTML = `<p>${message.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+                answerContainer.appendChild(messageDiv);
+            });
+            const lastMessage = answerContainer.lastElementChild;
+            if (lastMessage) {
+                lastMessage.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }
+
+        async function handleAskGemini() {
+            const questionInput = document.getElementById('gemini-question-input');
+            const submitButton = document.getElementById('submit-gemini-question');
+            
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            // Add user message to history and render
+            geminiChatHistory.push({ role: 'user', parts: [{ text: question }] });
+            renderChatHistory();
+            questionInput.value = ''; // Clear input
+
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<div class="spinner w-5 h-5"></div>';
+
+            // Add a thinking indicator
+            const answerContainer = document.getElementById('gemini-answer-container');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'chat-message model-message';
+            thinkingDiv.innerHTML = '<div class="spinner w-5 h-5"></div>';
+            answerContainer.appendChild(thinkingDiv);
+            thinkingDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+
+
+            const safetyPrompt = `
+                  You are a friendly, patient, and knowledgeable AI assistant for children.
+                  A child has asked the following question: "${question}"
+                  
+                  Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 8-13) to understand. Use analogies and simple examples where possible.
+                  
+                  IMPORTANT SAFETY RULES:
+                  - You MUST NOT answer questions about or use language related to violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, or any other mature or inappropriate themes.
+                  - If the user's question touches on any of these forbidden topics, you MUST refuse to answer directly. Instead, respond with a gentle and friendly refusal like: "That's a very grown-up question! I'm here to help with topics like science, animals, history, and homework. How about we talk about something else, like why dinosaurs are so cool?" and encourage the child to speak to their parents about that topic.
+                  - Keep your answers positive and encouraging.
+            `;
+            
+            // Prepend safety prompt to the first user message only
+            const conversationToSend = JSON.parse(JSON.stringify(geminiChatHistory));
+            if (conversationToSend.length === 2) { // First user message
+                conversationToSend[1].parts[0].text = safetyPrompt;
+            }
+
+            try {
+                const answer = await callGemini(conversationToSend);
+                geminiChatHistory.push({ role: 'model', parts: [{ text: answer }] });
+            } catch (error) {
+                console.error("Error asking Gemini:", error);
+                geminiChatHistory.push({ role: 'model', parts: [{ text: "Sorry, I had trouble thinking of an answer. Please try again!" }] });
+            } finally {
+                renderChatHistory(); // Render the final response (or error)
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        async function fetchConversationStarter() {
+            const questionEl = document.getElementById('starter-question');
+            const refreshBtn = document.getElementById('refresh-starter');
+            
+            refreshBtn.disabled = true;
+            questionEl.textContent = 'Thinking of a new question...';
+
+            // Get history to avoid repetition
+            let questionHistory = [];
+            try {
+                questionHistory = JSON.parse(localStorage.getItem('questionHistory') || '[]');
+            } catch (e) {
+                questionHistory = [];
+            }
+
+            const exclusionPrompt = questionHistory.length > 0 ? `Please do not ask a question similar to these recent ones: "${questionHistory.join('", "')}"` : "";
+
+            const prompt = `Generate a single, fun, and thought-provoking conversation starter question suitable for a family with children of various ages (8-17). The question should be open-ended and encourage imagination or sharing personal stories. Do not include any introductory text, just the question itself. ${exclusionPrompt}`;
+
+            try {
+                const question = await callGemini([{ parts: [{ text: prompt }] }]);
+                questionEl.textContent = question;
+
+                // Update history
+                questionHistory.push(question);
+                if (questionHistory.length > 10) { // Keep the last 10 questions
+                    questionHistory.shift();
+                }
+                localStorage.setItem('questionHistory', JSON.stringify(questionHistory));
+
+            } catch (error) {
+                console.error("Error fetching conversation starter:", error);
+                questionEl.textContent = 'What is your favorite family memory?'; // Fallback question
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // --- Feelings Wheel Functions ---
+        function initializeFeelingsWheel() {
+            const modalOverlay = document.getElementById('feelings-modal-overlay');
+            const openBtn = document.getElementById('mood-tracker-btn');
+            const closeBtn = document.getElementById('close-feelings-modal');
+            
+            openBtn.addEventListener('click', () => {
+                showNameSelection();
+                modalOverlay.style.display = 'flex';
+                lucide.createIcons();
+            });
+
+            closeBtn.addEventListener('click', closeAndResetFeelingsModal);
+            
+            modalOverlay.addEventListener('click', (event) => {
+                if(event.target === modalOverlay) {
+                    closeAndResetFeelingsModal();
+                }
+            });
+
+            updateOverallMoodIcon();
+        }
+        
+        function closeAndResetFeelingsModal() {
+            const modalOverlay = document.getElementById('feelings-modal-overlay');
+            modalOverlay.style.display = 'none';
+            // Reset the view to name selection for the next time it opens
+            document.getElementById('wheel-view').classList.add('hidden');
+            document.getElementById('name-selection-view').classList.remove('hidden');
+        };
+
+        function getFamilyFeelings() {
+            try {
+                return JSON.parse(localStorage.getItem('familyFeelings') || '{}');
+            } catch (e) { return {}; }
+        }
+
+        function saveFamilyFeelings(feelings) {
+            localStorage.setItem('familyFeelings', JSON.stringify(feelings));
+        }
+
+        function showNameSelection() {
+            const nameView = document.getElementById('name-selection-view');
+            const wheelView = document.getElementById('wheel-view');
+            const title = document.getElementById('feelings-modal-title');
+            
+            nameView.innerHTML = '';
+            wheelView.innerHTML = ''; // Clear the wheel view
+            nameView.classList.remove('hidden');
+            wheelView.classList.add('hidden');
+            title.textContent = 'How are you feeling?';
+
+            const familyFeelings = getFamilyFeelings();
+
+            FAMILY_MEMBERS.forEach(name => {
+                const personData = familyFeelings[name];
+                const button = document.createElement('button');
+                button.className = 'name-btn';
+                button.dataset.name = name;
+
+                let lastFeelingHTML = '<span class="text-xs text-white/50">Click to select a feeling</span>';
+                if (personData) {
+                    const lastUpdated = new Date(personData.lastUpdated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    lastFeelingHTML = `<span class="text-sm">${personData.feeling} <span class="text-xs text-white/50">(${lastUpdated})</span></span>`;
+                }
+
+                button.innerHTML = `<div class="flex justify-between items-center">
+                                        <span class="font-bold text-lg">${name}</span>
+                                        ${lastFeelingHTML}
+                                    </div>`;
+                button.addEventListener('click', () => showWheelForPerson(name));
+                nameView.appendChild(button);
+            });
+        }
+
+        function showWheelForPerson(name) {
+            selectedPersonForMood = name;
+            const nameView = document.getElementById('name-selection-view');
+            const wheelView = document.getElementById('wheel-view');
+            const title = document.getElementById('feelings-modal-title');
+
+            nameView.classList.add('hidden');
+            wheelView.classList.remove('hidden');
+            wheelView.innerHTML = '';
+            title.innerHTML = `<button id="back-to-names" class="p-1 mr-2 rounded-full hover:bg-white/10"><i data-lucide="arrow-left" class="w-5 h-5"></i></button> How are you feeling, ${name}?`;
+            document.getElementById('back-to-names').addEventListener('click', showNameSelection);
+
+            for (const coreEmotion in FEELINGS_WHEEL) {
+                const data = FEELINGS_WHEEL[coreEmotion];
+                const group = document.createElement('div');
+                group.className = 'core-emotion-group';
+
+                let feelingsHTML = '';
+                data.feelings.forEach(feeling => {
+                    feelingsHTML += `<button class="feeling-btn" data-core="${coreEmotion}" data-feeling="${feeling}">${feeling}</button>`;
+                });
+
+                group.innerHTML = `
+                    <div class="group-header ${data.color}" data-target="${coreEmotion}-list">
+                        <h3>${coreEmotion}</h3>
+                        <i data-lucide="chevron-down" class="chevron"></i>
+                    </div>
+                    <div id="${coreEmotion}-list" class="feelings-list">
+                        ${feelingsHTML}
+                    </div>
+                `;
+                wheelView.appendChild(group);
+            }
+
+            wheelView.querySelectorAll('.group-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const targetId = header.dataset.target;
+                    const list = document.getElementById(targetId);
+                    header.classList.toggle('open');
+                    list.classList.toggle('open');
+                });
+            });
+
+            wheelView.querySelectorAll('.feeling-btn').forEach(button => {
+                button.addEventListener('click', handleFeelingSelection);
+            });
+            lucide.createIcons();
+        }
+
+        function handleFeelingSelection(event) {
+            const { core, feeling } = event.currentTarget.dataset;
+            const familyFeelings = getFamilyFeelings();
+
+            familyFeelings[selectedPersonForMood] = {
+                feeling: feeling,
+                coreEmotion: core,
+                lastUpdated: new Date().toISOString()
+            };
+            saveFamilyFeelings(familyFeelings);
+            
+            closeAndResetFeelingsModal();
+            updateOverallMoodIcon();
+            showFeelingResponse(feeling, core);
+        }
+
+        function updateOverallMoodIcon() {
+            const btnIcon = document.getElementById('overall-mood-icon');
+            const moodBtn = document.getElementById('mood-tracker-btn');
+            if (!btnIcon || !moodBtn) return;
+
+            // Reset colors
+            moodBtn.classList.remove('bg-green-500/30', 'bg-blue-500/30', 'bg-red-600/30');
+
+            const familyFeelings = getFamilyFeelings();
+            const feelingsArray = Object.values(familyFeelings);
+
+            if (feelingsArray.length === 0) {
+                btnIcon.setAttribute('data-lucide', 'smile');
+                lucide.createIcons();
+                return;
+            }
+
+            let totalValue = 0;
+            feelingsArray.forEach(data => {
+                const coreEmotionData = FEELINGS_WHEEL[data.coreEmotion];
+                if (coreEmotionData) {
+                    totalValue += coreEmotionData.value;
+                }
+            });
+
+            const averageValue = totalValue / feelingsArray.length;
+            let overallIcon = 'smile';
+            let overallColorClass = 'bg-green-500/30';
+
+            if (averageValue < 2.5) {
+                overallIcon = 'frown';
+                overallColorClass = 'bg-red-600/30';
+            } else if (averageValue < 4) {
+                overallIcon = 'meh';
+                overallColorClass = 'bg-blue-500/30';
+            }
+
+            btnIcon.setAttribute('data-lucide', overallIcon);
+            moodBtn.classList.add(overallColorClass);
+            lucide.createIcons();
+        }
+        
+        // --- New Feeling Insight Functions ---
+        function initializeFeelingInsightModal() {
+            const modalOverlay = document.getElementById('feeling-insight-modal-overlay');
+            const closeBtn = document.getElementById('close-feeling-insight-modal');
+
+            closeBtn.addEventListener('click', () => {
+                modalOverlay.style.display = 'none';
+            });
+
+            modalOverlay.addEventListener('click', (event) => {
+                if (event.target === modalOverlay) {
+                    modalOverlay.style.display = 'none';
+                }
+            });
+        }
+
+        async function showFeelingResponse(feeling, coreEmotion) {
+            const modalOverlay = document.getElementById('feeling-insight-modal-overlay');
+            const titleEl = document.getElementById('feeling-insight-title');
+            const bodyEl = document.getElementById('feeling-insight-body');
+
+            titleEl.textContent = `Understanding "${feeling}"`;
+            bodyEl.innerHTML = `<div class="flex items-center justify-center"><div class="spinner w-8 h-8"></div><p class="ml-3 text-lg">Generating some helpful insight...</p></div>`;
+            modalOverlay.style.display = 'flex';
+            lucide.createIcons();
+
+            const prompt = `
+                Act as a helpful and empathetic family counselor using principles from emotional intelligence and cognitive behavioral therapy (CBT).
+                A person in a family context has identified their feeling as "${feeling}," which is part of the core emotion of "${coreEmotion}."
+
+                Please provide a response in JSON format that is simple, scientifically-backed, and suitable for a general audience including children (8+), teens, and adults. The tone should be reassuring and constructive.
+
+                The JSON object should contain two keys:
+                1. "explanation": A string that briefly and simply explains what this feeling is and a common reason why people experience it. (e.g., "Feeling hurt is a natural response when our feelings are dismissed or someone is unkind...")
+                2. "strategies": An array of at least two JSON objects, each with a "title" and a "description" for a simple, actionable, and positive coping strategy. (e.g., title: "Name The Feeling", description: "Simply saying 'I feel hurt because...' can help make the feeling less overwhelming.")
+            `;
+
+            try {
+                const insight = await callGemini([{ parts: [{ text: prompt }] }], "gemini-2.5-flash", feelingInsightSchema);
+                let strategiesHTML = (insight.strategies || []).map(strategy => `
+                    <div class="mt-4">
+                        <h4 class="font-bold text-lg text-white/90">${strategy.title}</h4>
+                        <p class="text-white/80">${strategy.description}</p>
+                    </div>
+                `).join('');
+
+                bodyEl.innerHTML = `
+                    <p class="text-lg text-white/90">${insight.explanation}</p>
+                    <h3 class="text-xl font-semibold mt-6 mb-2 border-t border-white/20 pt-4">What you can do:</h3>
+                    ${strategiesHTML}
+                `;
+            } catch (error) {
+                console.error("Error fetching feeling insight:", error);
+                bodyEl.innerHTML = `<p class="text-red-400">Sorry, I had trouble generating an insight for that feeling. The most important thing is to be kind to yourself and talk to someone you trust about how you're feeling.</p>`;
+            }
+        }
+
+        function checkRecentPrayerRequests(prayerRequests) {
+         const now = Date.now();
+         const oneDay = 24 * 60 * 60 * 1000;
+         const hasRecent = prayerRequests.some(req => {
+           let date;
+           if (req.requestedAt && typeof req.requestedAt.toDate === 'function') {
+             date = req.requestedAt.toDate();
+           } else if (typeof req.requestedAt === 'string') {
+             date = new Date(req.requestedAt);
+           }
+           return date && (now - date.getTime() < oneDay);
+         });
+         const btn = document.getElementById('open-prayer-modal');
+         if (btn) {
+           if (hasRecent) {
+             btn.classList.add('pulse');
+           } else {
+             btn.classList.remove('pulse');
+           }
+         }
+        }
+    </script>
+</body>
+</html>
