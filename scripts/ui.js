@@ -1,6 +1,6 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY, getRawWeatherData, setRawWeatherData, getCurrentVerse, setCurrentVerse, getActivityIdeas, setActivityIdeas, getVerseInsights, setVerseInsights, getCurrentIdeaIndex, setCurrentIdeaIndex, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory, setGeminiChatHistory } from './main.js';
 import { setCurrentPrayerDocId } from './firebase.js';
-import { showFeelingResponse } from './gemini.js';
+import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
 
 export function updateTime() {
     const now = new Date();
@@ -59,7 +59,7 @@ export function renderVerseCarousel(insights) {
                 <h5 class="font-semibold text-lg mb-2">The Big Idea</h5>
                 <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
                 <h5 class="font-semibold text-lg mb-2">Think About It</h5>
-                <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}<
+                <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}
 /div>
                 <h5 class="font-semibold text-lg mb-2">Prayer</h5>
                 <p class="text-base mb-4">${dev.prayer}</p>

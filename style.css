@@ -283,7 +283,7 @@ body {
             font-size: 1rem; /* text-base */
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 0.5rem;
         }
         #sunrise-sunset {
