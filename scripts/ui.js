@@ -2,6 +2,8 @@ import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY, get
 import { setCurrentPrayerDocId } from './firebase.js';
 import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
 
+let allPrayers = [];
+
 export function updateTime() {
     const now = new Date();
     const timeEl = document.getElementById('time');
@@ -388,14 +390,27 @@ export function checkRecentPrayerRequests(prayerRequests) {
     }
 }
 
-export function renderPrayerLists(prayers) {
+export function setAllPrayers(prayers) {
+    allPrayers = prayers;
+}
+
+export function renderPrayerLists(searchTerm = '') {
     const currentList = document.getElementById('current-requests-list');
     const answeredList = document.getElementById('answered-prayers-list');
     currentList.innerHTML = '';
     answeredList.innerHTML = '';
 
-    const currentPrayers = prayers.filter(p => p.status === 'current');
-    const answeredPrayers = prayers.filter(p => p.status === 'answered');
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+    const filteredPrayers = allPrayers.filter(p => {
+        const nameMatch = p.name.toLowerCase().includes(lowerCaseSearchTerm);
+        const requestMatch = p.requestText.toLowerCase().includes(lowerCaseSearchTerm);
+        const answerMatch = p.answerText ? p.answerText.toLowerCase().includes(lowerCaseSearchTerm) : false;
+        return nameMatch || requestMatch || answerMatch;
+    });
+
+    const currentPrayers = filteredPrayers.filter(p => p.status === 'current');
+    const answeredPrayers = filteredPrayers.filter(p => p.status === 'answered');
 
     if (currentPrayers.length === 0) {
         currentList.innerHTML = `<p class="text-white/50">No current prayer requests.</p>`;
@@ -525,6 +540,7 @@ export function showAnswerRequestView(docId, requestText) {
     document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
     document.getElementById('submit-prayer-request-btn').classList.add('hidden');
     document.getElementById('update-prayer-request-btn').classList.add('hidden');
+    document.getElementById('update-prayer-answer-btn').classList.add('hidden');
     document.getElementById('prayer-modal-title').textContent = 'Answer a Prayer';
     document.getElementById('original-request-for-answer').textContent = requestText;
     document.getElementById('prayer-answer-text').value = '';

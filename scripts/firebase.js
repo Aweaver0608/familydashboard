@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { FAMILY_MEMBERS } from './main.js';
-import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests } from './ui.js';
+import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 
 const firebaseConfigStr = typeof __firebase_config !== 'undefined' 
     ? __firebase_config 
@@ -68,13 +68,13 @@ function listenForPrayerRequests() {
     const q = query(prayerCollection, orderBy("requestedAt", "desc"));
 
     prayerRequestsUnsubscribe = onSnapshot(q, (querySnapshot) => {
-        const allPrayers = [];
+        const prayers = [];
         querySnapshot.forEach((doc) => {
-            allPrayers.push({ id: doc.id, ...doc.data() });
+            prayers.push({ id: doc.id, ...doc.data() });
         });
-        renderPrayerLists(allPrayers);
-        // Add this line to trigger the pulse animation if there are recent requests
-        checkRecentPrayerRequests(allPrayers);
+        setAllPrayers(prayers);
+        renderPrayerLists();
+        checkRecentPrayerRequests(prayers);
     }, (error) => {
         console.error("Error listening for prayer requests:", error);
         document.getElementById('current-requests-list').innerHTML = `<p class="text-red-400">Could not load requests. Check security rules.</p>`;

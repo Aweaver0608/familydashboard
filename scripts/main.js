@@ -1,6 +1,6 @@
 import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
 import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
-import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory } from './ui.js';
+import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists } from './ui.js';
 
 // --- CONFIGURATION ---
 export const WEATHER_CITY_DETAILS = {
@@ -173,6 +173,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.confirm("Are you sure you want to update this answer?")) {
                 handleUpdateAnswer();
             }
+        });
+
+        const searchInput = document.getElementById('prayer-search-input');
+        searchInput.addEventListener('input', (e) => {
+            renderPrayerLists(e.target.value);
         });
 
     } catch (error) {
