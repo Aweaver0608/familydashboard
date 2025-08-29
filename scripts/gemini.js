@@ -154,7 +154,7 @@ export async function fetchVerseOfTheDayFromGemini() {
         
         const geminiVerseResponse = await callGemini([{ parts: [{ text: versePrompt }] }]);
         
-        const strictMatch = geminiVerseResponse.match(/(.*)\\s\(([^)]+)\\sNLT\)/i);
+        const strictMatch = geminiVerseResponse.match(/(.*)\s\(([^)]+)\sNLT\)/i);
         if (!strictMatch) throw new Error("Verse response format was incorrect.");
         
         const [_, text, reference] = strictMatch;
