@@ -162,10 +162,18 @@ document.addEventListener('DOMContentLoaded', function() {
         lucide.createIcons();
 
         const updateRequestBtn = document.getElementById('update-prayer-request-btn');
-        updateRequestBtn.addEventListener('click', handleUpdateRequest);
+        updateRequestBtn.addEventListener('click', () => {
+            if (window.confirm("Are you sure you want to update this prayer request?")) {
+                handleUpdateRequest();
+            }
+        });
 
         const updateAnswerBtn = document.getElementById('update-prayer-answer-btn');
-        updateAnswerBtn.addEventListener('click', handleUpdateAnswer);
+        updateAnswerBtn.addEventListener('click', () => {
+            if (window.confirm("Are you sure you want to update this answer?")) {
+                handleUpdateAnswer();
+            }
+        });
 
     } catch (error) {
         console.error("Critical error on startup:", error);
