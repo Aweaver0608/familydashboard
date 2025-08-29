@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -155,6 +154,29 @@ async function handleAddPrayerAnswer() {
         });
         showPrayerListView();
         currentPrayerDocId = null; // Reset
+    } catch (e) {
+        console.error("Error updating document: ", e);
+    }
+}
+
+export async function handleUpdateAnswer() {
+    const answerInput = document.getElementById('prayer-answer-text');
+    const answerText = answerInput.value.trim();
+    const prayerId = document.getElementById('edit-prayer-id').value;
+
+    if (!answerText) {
+        console.warn("Answer text cannot be empty.");
+        answerInput.classList.add('error');
+        setTimeout(() => answerInput.classList.remove('error'), 2000);
+        return;
+    }
+
+    try {
+        const prayerDocRef = doc(db, "prayerRequests", prayerId);
+        await updateDoc(prayerDocRef, {
+            answerText: answerText,
+        });
+        showPrayerListView();
     } catch (e) {
         console.error("Error updating document: ", e);
     }

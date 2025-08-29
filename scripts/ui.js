@@ -445,7 +445,13 @@ function createPrayerItem(prayer) {
     `;
     
     const answerBtn = item.querySelector('.answer-btn');
-    item.addEventListener('click', () => showEditRequestView(prayer));
+    item.addEventListener('click', () => {
+        if (prayer.status === 'answered') {
+            showEditAnswerView(prayer);
+        } else {
+            showEditRequestView(prayer);
+        }
+    });
     if (answerBtn) {
         answerBtn.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -465,6 +471,7 @@ export function showPrayerListView() {
     document.getElementById('cancel-prayer-request-btn').classList.add('hidden');
     document.getElementById('submit-prayer-request-btn').classList.add('hidden');
     document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+    document.getElementById('update-prayer-answer-btn').classList.add('hidden');
     document.getElementById('prayer-modal-title').textContent = 'Family Prayer Requests';
     document.getElementById('edit-prayer-id').value = '';
 }
@@ -477,6 +484,7 @@ export function showAddRequestView() {
     document.getElementById('submit-prayer-request-btn').classList.remove('hidden');
     document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
     document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+    document.getElementById('update-prayer-answer-btn').classList.add('hidden');
     document.getElementById('prayer-modal-title').textContent = 'Add a Request';
 
     const nameSelect = document.getElementById('prayer-requester-name');
@@ -494,6 +502,7 @@ export function showEditRequestView(prayer) {
     document.getElementById('add-new-prayer-request-btn').classList.add('hidden');
     document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
     document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+    document.getElementById('update-prayer-answer-btn').classList.add('hidden');
     document.getElementById('prayer-modal-title').textContent = 'Edit Request';
 
     const nameSelect = document.getElementById('prayer-requester-name');
@@ -520,4 +529,21 @@ export function showAnswerRequestView(docId, requestText) {
     document.getElementById('original-request-for-answer').textContent = requestText;
     document.getElementById('prayer-answer-text').value = '';
     document.getElementById('edit-prayer-id').value = '';
+}
+
+export function showEditAnswerView(prayer) {
+    setCurrentPrayerDocId(prayer.id);
+    document.getElementById('prayer-list-view').classList.add('hidden');
+    document.getElementById('answer-prayer-form-view').classList.remove('hidden');
+    document.getElementById('add-prayer-form-view').classList.add('hidden');
+    document.getElementById('add-new-prayer-request-btn').classList.add('hidden');
+    document.getElementById('submit-prayer-answer-btn').classList.add('hidden');
+    document.getElementById('update-prayer-answer-btn').classList.remove('hidden');
+    document.getElementById('cancel-prayer-request-btn').classList.remove('hidden');
+    document.getElementById('submit-prayer-request-btn').classList.add('hidden');
+    document.getElementById('update-prayer-request-btn').classList.add('hidden');
+    document.getElementById('prayer-modal-title').textContent = 'Edit Answer';
+    document.getElementById('original-request-for-answer').textContent = prayer.requestText;
+    document.getElementById('prayer-answer-text').value = prayer.answerText;
+    document.getElementById('edit-prayer-id').value = prayer.id;
 }

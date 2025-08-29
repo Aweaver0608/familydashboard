@@ -1,5 +1,4 @@
-
-import { initializePrayerRequests, handleUpdateRequest } from './firebase.js';
+import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
 import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
 import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory } from './ui.js';
 
@@ -164,6 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const updateRequestBtn = document.getElementById('update-prayer-request-btn');
         updateRequestBtn.addEventListener('click', handleUpdateRequest);
+
+        const updateAnswerBtn = document.getElementById('update-prayer-answer-btn');
+        updateAnswerBtn.addEventListener('click', handleUpdateAnswer);
 
     } catch (error) {
         console.error("Critical error on startup:", error);
