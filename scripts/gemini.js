@@ -1,5 +1,5 @@
 import { GEMINI_API_KEY } from '../config.js';
-import { renderVerseCarousel, renderActivityCarousel, renderChatHistory } from './ui.js';
+import { renderVerseCarousel, renderActivityCarousel, renderChatHistory, updateVerseFromLocalList } from './ui.js';
 import { addVerseToHistory, getVerseHistory, getRawWeatherData, setRawWeatherData, getCurrentVerse, setCurrentVerse, getActivityIdeas, setActivityIdeas, getVerseInsights, setVerseInsights, getCurrentIdeaIndex, setCurrentIdeaIndex, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory, setGeminiChatHistory } from './main.js';
 
 // --- JSON Schemas for Gemini ---
