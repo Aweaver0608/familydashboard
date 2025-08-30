@@ -231,14 +231,16 @@
                 </button>
             </div>
             <div class="modal-body scrollable-content">
-                <p class="mb-4">Smart Search allows you to use natural language to find specific prayer requests. Here’s how it works:</p>
-                <ul class="list-disc list-inside space-y-2 mb-4">
-                    <li><strong>Basic Search:</strong> Just type a name or keyword. E.g., "John" or "healing".</li>
-                    <li><strong>Date-based Queries:</strong> Find requests from a specific time. E.g., "requests from yesterday", "prayers in the last week".</li>
-                    <li><strong>Complex Queries:</strong> Combine names and dates. E.g., "John's requests from this month".</li>
-                    <li><strong>Answered Prayers:</strong> Search for answered prayers. E.g., "answered prayers for Sarah", "what was answered last week".</li>
+                <p class="mb-4">Smart Search allows you to use a powerful query syntax to find specific prayer requests. Here’s how it works:</p>
+                <ul class="list-disc list-inside space-y-3 mb-4">
+                    <li><strong>Keywords:</strong> Just type a word. <code class="bg-black/20 px-1.5 py-1 rounded">school</code></li>
+                    <li><strong>AND Logic:</strong> Use spaces or <code class="bg-black/20 px-1.5 py-1 rounded">AND</code> for words that must appear. <code class="bg-black/20 px-1.5 py-1 rounded">Andrew AND Dad</code></li>
+                    <li><strong>OR Logic:</strong> Use <code class="bg-black/20 px-1.5 py-1 rounded">OR</code> for at least one of the words. <code class="bg-black/20 px-1.5 py-1 rounded">Dad OR Mom</code></li>
+                    <li><strong>Field Search:</strong> Search a specific field with <code class="bg-black/20 px-1.5 py-1 rounded">key:value</code>. <code class="bg-black/20 px-1.5 py-1 rounded">name:Andrew</code></li>
+                    <li><strong>Grouping:</strong> Use parentheses <code class="bg-black/20 px-1.5 py-1 rounded">()</code> to group terms. <code class="bg-black/20 px-1.5 py-1 rounded">name:Andrew AND (Dad OR Grandpa)</code></li>
+                    <li><strong>Exact Phrase:</strong> Use double quotes <code class="bg-black/20 px-1.5 py-1 rounded">""</code> for exact phrases. <code class="bg-black/20 px-1.5 py-1 rounded">"sick at home"</code></li>
                 </ul>
-                <p>The search is powered by Gemini, so feel free to experiment with different ways of asking!</p>
+                <p>This syntax provides a flexible way to construct highly specific queries.</p>
             </div>
         </div>
     </div>
