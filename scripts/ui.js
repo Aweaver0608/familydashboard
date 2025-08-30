@@ -711,3 +711,47 @@ export function initializeSmartSearchHelpModal() {
         }
     });
 }
+
+export function initializeSearchOperatorDropdown() {
+    const operatorBtn = document.getElementById('search-operator-btn');
+    const operatorDropdown = document.getElementById('search-operator-dropdown');
+    const searchInput = document.getElementById('prayer-search-input');
+
+    operatorBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        operatorDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        operatorDropdown.classList.add('hidden');
+    });
+
+    operatorDropdown.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+
+    operatorDropdown.querySelectorAll('a').forEach(item => {
+        item.addEventListener('click', (event) => {
+            event.preventDefault();
+            const operator = item.dataset.operator;
+            const currentVal = searchInput.value;
+            const selectionStart = searchInput.selectionStart;
+            const selectionEnd = searchInput.selectionEnd;
+
+            if (operator === '()') {
+                searchInput.value = currentVal.slice(0, selectionStart) + '()'+ currentVal.slice(selectionEnd);
+                searchInput.focus();
+                searchInput.setSelectionRange(selectionStart + 1, selectionStart + 1);
+            } else if (operator === '""') {
+                searchInput.value = currentVal.slice(0, selectionStart) + '""'+ currentVal.slice(selectionEnd);
+                searchInput.focus();
+                searchInput.setSelectionRange(selectionStart + 1, selectionStart + 1);
+            } else {
+                searchInput.value = currentVal.slice(0, selectionStart) + operator + currentVal.slice(selectionEnd);
+                searchInput.focus();
+                searchInput.setSelectionRange(selectionStart + operator.length, selectionStart + operator.length);
+            }
+            operatorDropdown.classList.add('hidden');
+        });
+    });
+}

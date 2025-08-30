@@ -262,6 +262,20 @@
                         <button id="open-smart-search-help-btn" class="glass-btn p-2">
                             <i data-lucide="info" class="w-5 h-5"></i>
                         </button>
+                        <div class="relative inline-block text-left">
+                            <button type="button" id="search-operator-btn" class="glass-btn p-2">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                            <div id="search-operator-dropdown" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="search-operator-btn">
+                                <div class="py-1" role="none">
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator=" AND ">AND</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator=" OR ">OR</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator=":">: (colon)</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="()">() (parentheses)</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="\"\"">"" (quotes)</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <p class="text-white/70 italic text-sm">Click on a prayer request to edit it.</p>
                     <h3 class="text-lg font-semibold mb-2">Current Requests</h3>

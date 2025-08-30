@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeFeelingInsightModal();
         initializePrayerRequests();
         initializeSmartSearchHelpModal();
+        initializeSearchOperatorDropdown();
     
         document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
