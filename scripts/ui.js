@@ -690,3 +690,24 @@ export function showEditAnswerView(prayer) {
     document.getElementById('prayer-answer-text').value = prayer.answerText;
     document.getElementById('edit-prayer-id').value = prayer.id;
 }
+
+export function initializeSmartSearchHelpModal() {
+    const modalOverlay = document.getElementById('smart-search-help-modal-overlay');
+    const openBtn = document.getElementById('open-smart-search-help-btn');
+    const closeBtn = document.getElementById('close-smart-search-help-modal');
+
+    openBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'flex';
+        lucide.createIcons();
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'none';
+    });
+
+    modalOverlay.addEventListener('click', (event) => {
+        if (event.target === modalOverlay) {
+            modalOverlay.style.display = 'none';
+        }
+    });
+}
