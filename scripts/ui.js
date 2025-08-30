@@ -505,6 +505,8 @@ export function renderPrayerLists(searchTerm = '') {
     currentList.innerHTML = '';
     answeredList.innerHTML = '';
 
+    console.log('renderPrayerLists called with searchTerm:', searchTerm);
+
     if (!searchTerm.trim()) {
         const allCurrentPrayers = allPrayers.filter(p => p.status === 'current');
         const allAnsweredPrayers = allPrayers.filter(p => p.status === 'answered');
@@ -523,9 +525,16 @@ export function renderPrayerLists(searchTerm = '') {
     }
 
     const tokens = parseSmartSearch(searchTerm);
+    console.log('Parsed tokens:', tokens);
     const ast = buildAst(tokens);
+    console.log('Built AST:', ast);
 
-    const filteredPrayers = allPrayers.filter(p => evaluateAst(p, ast));
+    const filteredPrayers = allPrayers.filter(p => {
+        const match = evaluateAst(p, ast);
+        console.log('Prayer:', p.requestText, 'Matches:', match);
+        return match;
+    });
+    console.log('Filtered prayers:', filteredPrayers);
 
     const currentPrayers = filteredPrayers.filter(p => p.status === 'current');
     const answeredPrayers = filteredPrayers.filter(p => p.status === 'answered');
