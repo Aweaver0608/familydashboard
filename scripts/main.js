@@ -1,6 +1,6 @@
 import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
 import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
-import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists } from './ui.js';
+import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal } from './ui.js';
 
 // --- CONFIGURATION ---
 export const WEATHER_CITY_DETAILS = {
