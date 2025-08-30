@@ -628,3 +628,7 @@ body {
           70% { box-shadow: 0 0 0 10px rgba(0, 150, 255, 0); }
           100% { box-shadow: 0 0 0 0 rgba(0, 150, 255, 0); }
         }
+
+#smart-search-help-modal-overlay {
+    z-index: 1000;
+}
