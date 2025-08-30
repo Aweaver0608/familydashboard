@@ -394,32 +394,150 @@ export function setAllPrayers(prayers) {
     allPrayers = prayers;
 }
 
+function parseSmartSearch(query) {
+    const tokenRegex = /\s*("([^"]*)"|\(|\)|AND|OR|[\w:]+)\s*/g;
+    const tokens = [];
+    let match;
+    while ((match = tokenRegex.exec(query)) !== null) {
+        // We need to handle implicit AND operators.
+        // If the current token is a value or a right parenthesis,
+        // and the previous token was also a value or a right parenthesis,
+        // then we insert an AND operator.
+        if (tokens.length > 0) {
+            const prevToken = tokens[tokens.length - 1];
+            if (prevToken !== '(' && prevToken !== 'AND' && prevToken !== 'OR' && match[1] !== ')' && match[1] !== 'AND' && match[1] !== 'OR') {
+                tokens.push('AND');
+            }
+        }
+        tokens.push(match[1]);
+    }
+    return tokens;
+}
+
+function buildAst(tokens) {
+    const precedence = { 'OR': 1, 'AND': 2 };
+    const rpn = [];
+    const operators = [];
+
+    tokens.forEach(token => {
+        if (token === 'AND' || token === 'OR') {
+            while (operators.length > 0 && operators[operators.length - 1] !== '(' && precedence[operators[operators.length - 1]] >= precedence[token]) {
+                rpn.push(operators.pop());
+            }
+            operators.push(token);
+        } else if (token === '(') {
+            operators.push(token);
+        } else if (token === ')') {
+            while (operators.length > 0 && operators[operators.length - 1] !== '(') {
+                rpn.push(operators.pop());
+            }
+            operators.pop(); // Discard the '('
+        } else {
+            rpn.push(token);
+        }
+    });
+
+    while (operators.length > 0) {
+        rpn.push(operators.pop());
+    }
+
+    const astStack = [];
+    rpn.forEach(token => {
+        if (token === 'AND' || token === 'OR') {
+            const right = astStack.pop();
+            const left = astStack.pop();
+            astStack.push({ type: token, left, right });
+        } else {
+            astStack.push({ type: 'VALUE', value: token });
+        }
+    });
+
+    return astStack[0];
+}
+
+function evaluateAst(prayer, ast) {
+    if (!ast) {
+        return true;
+    }
+    switch (ast.type) {
+        case 'AND':
+            return evaluateAst(prayer, ast.left) && evaluateAst(prayer, ast.right);
+        case 'OR':
+            return evaluateAst(prayer, ast.left) || evaluateAst(prayer, ast.right);
+        case 'VALUE':
+            return prayerMatches(prayer, ast.value);
+        default:
+            return true;
+    }
+}
+
+function prayerMatches(prayer, searchTerm) {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (lowerCaseSearchTerm.startsWith('"') && lowerCaseSearchTerm.endsWith('"')) {
+        const phrase = lowerCaseSearchTerm.substring(1, lowerCaseSearchTerm.length - 1);
+        return prayer.name.toLowerCase().includes(phrase) ||
+               prayer.requestText.toLowerCase().includes(phrase) ||
+               (prayer.answerText && prayer.answerText.toLowerCase().includes(phrase));
+    }
+
+    if (lowerCaseSearchTerm.includes(':')) {
+        const [field, value] = lowerCaseSearchTerm.split(':', 2);
+        switch (field) {
+            case 'name':
+                return prayer.name.toLowerCase().includes(value);
+            case 'request':
+                return prayer.requestText.toLowerCase().includes(value);
+            case 'answer':
+                return prayer.answerText && prayer.answerText.toLowerCase().includes(value);
+            default:
+                return false;
+        }
+    }
+
+    return prayer.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+           prayer.requestText.toLowerCase().includes(lowerCaseSearchTerm) ||
+           (prayer.answerText && prayer.answerText.toLowerCase().includes(lowerCaseSearchTerm));
+}
+
 export function renderPrayerLists(searchTerm = '') {
     const currentList = document.getElementById('current-requests-list');
     const answeredList = document.getElementById('answered-prayers-list');
     currentList.innerHTML = '';
     answeredList.innerHTML = '';
 
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (!searchTerm.trim()) {
+        const allCurrentPrayers = allPrayers.filter(p => p.status === 'current');
+        const allAnsweredPrayers = allPrayers.filter(p => p.status === 'answered');
+        if (allCurrentPrayers.length === 0) {
+            currentList.innerHTML = `<p class="text-white/50">No current prayer requests.</p>`;
+        } else {
+            allCurrentPrayers.forEach(p => currentList.appendChild(createPrayerItem(p)));
+        }
+        if (allAnsweredPrayers.length === 0) {
+            answeredList.innerHTML = `<p class="text-white/50">No answered prayers yet.</p>`;
+        } else {
+            allAnsweredPrayers.forEach(p => answeredList.appendChild(createPrayerItem(p)));
+        }
+        lucide.createIcons();
+        return;
+    }
 
-    const filteredPrayers = allPrayers.filter(p => {
-        const nameMatch = p.name.toLowerCase().includes(lowerCaseSearchTerm);
-        const requestMatch = p.requestText.toLowerCase().includes(lowerCaseSearchTerm);
-        const answerMatch = p.answerText ? p.answerText.toLowerCase().includes(lowerCaseSearchTerm) : false;
-        return nameMatch || requestMatch || answerMatch;
-    });
+    const tokens = parseSmartSearch(searchTerm);
+    const ast = buildAst(tokens);
+
+    const filteredPrayers = allPrayers.filter(p => evaluateAst(p, ast));
 
     const currentPrayers = filteredPrayers.filter(p => p.status === 'current');
     const answeredPrayers = filteredPrayers.filter(p => p.status === 'answered');
 
     if (currentPrayers.length === 0) {
-        currentList.innerHTML = `<p class="text-white/50">No current prayer requests.</p>`;
+        currentList.innerHTML = `<p class="text-white/50">No current prayer requests matching your search.</p>`;
     } else {
         currentPrayers.forEach(p => currentList.appendChild(createPrayerItem(p)));
     }
 
     if (answeredPrayers.length === 0) {
-        answeredList.innerHTML = `<p class="text-white/50">No answered prayers yet.</p>`;
+        answeredList.innerHTML = `<p class="text-white/50">No answered prayers matching your search.</p>`;
     } else {
         answeredPrayers.forEach(p => answeredList.appendChild(createPrayerItem(p)));
     }
