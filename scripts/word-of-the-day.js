@@ -28,7 +28,7 @@ export async function fetchWordOfTheDay() {
         const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.startsWith(randomWord));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
-            console.warn(`Invalid dictionary data structure for ${randomWord}.`);
+            console.warn(`Invalid dictionary data structure for ${randomWord}. Raw data:`, dictionaryData);
             return null;
         }
 
