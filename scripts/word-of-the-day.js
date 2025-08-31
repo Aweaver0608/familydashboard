@@ -31,29 +31,44 @@ function cleanMarkup(text) {
 
 export async function fetchWordOfTheDay() {
     try {
-        // Fetch word of the day from Merriam-Webster Collegiate Dictionary API
-        const dictionaryResponse = await fetch(`${DICTIONARY_API_URL}word_of_the_day?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
+        // Step 1: Fetch the word of the day (which is just the word string)
+        const wordOfTheDayResponse = await fetch(`${DICTIONARY_API_URL}word_of_the_day?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
+        if (!wordOfTheDayResponse.ok) {
+            throw new Error(`HTTP error! status: ${wordOfTheDayResponse.status}`);
+        }
+        const wordOfTheDayData = await wordOfTheDayResponse.json();
+
+        console.log(`Raw word of the day data:`, JSON.stringify(wordOfTheDayData, null, 2));
+
+        if (!wordOfTheDayData || wordOfTheDayData.length === 0 || typeof wordOfTheDayData[0] !== 'string') {
+            console.warn(`Unexpected word of the day data format. API response:`, wordOfTheDayData);
+            return null;
+        }
+
+        const word = wordOfTheDayData[0]; // The actual word is the first element
+
+        // Step 2: Fetch the full definition for that word
+        const dictionaryResponse = await fetch(`${DICTIONARY_API_URL}${word}?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
         if (!dictionaryResponse.ok) {
             throw new Error(`HTTP error! status: ${dictionaryResponse.status}`);
         }
         const dictionaryData = await dictionaryResponse.json();
 
-        console.log(`Processing word of the day. Raw dictionary data:`, JSON.stringify(dictionaryData, null, 2));
+        console.log(`Processing word: ${word}. Raw dictionary data:`, JSON.stringify(dictionaryData, null, 2));
 
-        if (!dictionaryData || dictionaryData.length === 0) {
-            console.warn(`No valid word of the day data. API response:`, dictionaryData);
+        if (!dictionaryData || dictionaryData.length === 0 || typeof dictionaryData[0] === 'string') {
+            console.warn(`No valid dictionary data for ${word}. API response:`, dictionaryData);
             return null;
         }
 
-        const wordEntry = dictionaryData[0]; // Collegiate word_of_the_day returns a single entry in an array
+        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.toLowerCase().startsWith(word.toLowerCase()));
 
-        if (!wordEntry || !wordEntry.word || !wordEntry.def || !wordEntry.fl || !wordEntry.pron) {
-            console.warn(`Invalid word of the day data structure. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
+        if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
+            console.warn(`Invalid dictionary data structure for ${word}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
             return null;
         }
 
-        const word = wordEntry.word;
-        const phonetic = wordEntry.pron.mw;
+        const phonetic = wordEntry.hwi.prs && wordEntry.hwi.prs[0] ? wordEntry.hwi.prs[0].mw : 'N/A';
         const partOfSpeech = wordEntry.fl;
 
         // Definitions from Collegiate API are in 'def' array, each element is a definition object
@@ -71,7 +86,7 @@ export async function fetchWordOfTheDay() {
         }).filter(Boolean);
 
         // Extract audio filename
-        const audioFilename = wordEntry.pron.sound.audio;
+        const audioFilename = wordEntry.hwi.prs?.[0]?.sound?.audio;
         const audioUrl = getAudioUrl(audioFilename);
 
         // Extract example sentences from 'def' array, looking for 'vis' (verbal illustration)
