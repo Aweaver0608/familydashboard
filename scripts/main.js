@@ -325,8 +325,15 @@ async function fetchWeather() {
 }
 
 function getWeatherIcon(shortForecast, isDaytime) {
-    const forecast = shortForecast.toLowerCase();
+    let forecast = shortForecast.toLowerCase();
     let iconName = '';
+
+    // If we explicitly want a daytime icon, remove any night-related keywords from forecast
+    if (isDaytime) {
+        forecast = forecast.replace(/night/g, '').replace(/evening/g, '').trim();
+    } else { // If we explicitly want a nighttime icon, remove any day-related keywords
+        forecast = forecast.replace(/day/g, '').replace(/morning/g, '').replace(/afternoon/g, '').trim();
+    }
 
     // Prioritize isDaytime for icon selection
     if (isDaytime) {
