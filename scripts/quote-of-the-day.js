@@ -228,16 +228,40 @@ function getQuoteOfTheDay() {
 }
 
 export function initializeQuoteOfTheDay() {
-    const quote = getQuoteOfTheDay();
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    let dailyQuoteData = null;
+
+    try {
+        const storedData = localStorage.getItem('dailyQuote');
+        if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            if (parsedData.date === today) {
+                dailyQuoteData = parsedData.quote;
+            }
+        }
+    } catch (e) {
+        console.error("Error reading daily quote from localStorage:", e);
+    }
+
+    if (!dailyQuoteData) {
+        // Fetch a new quote if not found or date is old
+        dailyQuoteData = getQuoteOfTheDay();
+        try {
+            localStorage.setItem('dailyQuote', JSON.stringify({ date: today, quote: dailyQuoteData }));
+        } catch (e) {
+            console.error("Error saving daily quote to localStorage:", e);
+        }
+    }
+
     const quoteBanner = document.getElementById('quote-banner');
     const quoteText = document.getElementById('quote-text');
     const quoteAuthor = document.getElementById('quote-author');
 
-    if (quoteText && quoteAuthor && quote) {
-        quoteText.textContent = `"${quote.quote}"`;
-        quoteAuthor.textContent = ` - ${quote.author}`;
-        if(quote.source) {
-            quoteAuthor.textContent += ` (${quote.source})`;
+    if (quoteText && quoteAuthor && dailyQuoteData) {
+        quoteText.textContent = `"${dailyQuoteData.quote}"`;
+        quoteAuthor.textContent = ` - ${dailyQuoteData.author}`;
+        if(dailyQuoteData.source) {
+            quoteAuthor.textContent += ` (${dailyQuoteData.source})`;
         }
     }
 }

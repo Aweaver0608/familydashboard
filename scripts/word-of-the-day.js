@@ -236,8 +236,34 @@ export async function initializeWordOfTheDay() {
         });
     }
 
-    // Fetch and display the word of the day on initial load
-    cachedWordData = await fetchWordOfTheDay();
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    let dailyWordData = null;
+
+    try {
+        const storedData = localStorage.getItem('dailyWord');
+        if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            if (parsedData.date === today) {
+                dailyWordData = parsedData.word;
+            }
+        }
+    } catch (e) {
+        console.error("Error reading daily word from localStorage:", e);
+    }
+
+    if (!dailyWordData) {
+        // Fetch a new word if not found or date is old
+        dailyWordData = await fetchWordOfTheDay();
+        if (dailyWordData) {
+            try {
+                localStorage.setItem('dailyWord', JSON.stringify({ date: today, word: dailyWordData }));
+            } catch (e) {
+                console.error("Error saving daily word to localStorage:", e);
+            }
+        }
+    }
+
+    cachedWordData = dailyWordData; // Update cachedWordData with the daily word
     if (cachedWordData) {
         document.getElementById('word-of-the-day-text').textContent = cachedWordData.word;
         wordOfTheDayBtn.classList.remove('hidden'); // Make the button visible
