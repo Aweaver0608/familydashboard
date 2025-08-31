@@ -10,7 +10,7 @@ body {
             background-size: cover;
             background-position: center;
             transition: background-image 1s ease-in-out; /* Smooth transition for background image */
-            padding-top: 0.5rem; /* Space for the fixed quote banner */
+            padding-top: 0.6rem; /* Space for the fixed quote banner */
         }
 
         /* Dark Overlay for Readability */
@@ -499,14 +499,14 @@ body {
         /* --- Floating Action Buttons --- */
         #open-gemini-modal {
             position: fixed;
-            bottom: 1.5rem;
+            bottom: 0.9rem;
             left: 1.5rem;
             z-index: 50;
             padding: 1rem;
         }
         #open-prayer-modal {
             position: fixed;
-            bottom: 1.5rem;
+            bottom: 0.9rem;
             right: 1.5rem;
             z-index: 50;
             padding: 1rem;
@@ -767,7 +767,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 500;
 }
 
