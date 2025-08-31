@@ -111,8 +111,10 @@ export async function fetchWordOfTheDay() {
             console.warn(`Thesaurus API error for word "${word}": status ${thesaurusResponse.status}`);
         }
         const thesaurusData = await thesaurusResponse.json();
+        console.log(`Raw thesaurus data for ${word}:`, JSON.stringify(thesaurusData, null, 2)); // Added for debugging
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
+        console.log(`Extracted antonyms for ${word}:`, antonyms); // Added for debugging
 
         return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology };
 
