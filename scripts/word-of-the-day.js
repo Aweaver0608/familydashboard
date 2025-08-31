@@ -1,5 +1,5 @@
 import { MERRIAM_WEBSTER_COLLEGIATE_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
-import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord } from '../scripts/gemini.js'; // Import the new function
+import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord, fetchDidYouKnowFactForWord } from '../scripts/gemini.js'; // Import the new function
 
 const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
@@ -114,7 +114,10 @@ export async function fetchWordOfTheDay() {
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
 
-        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology };
+        // Fetch "Did You Know?" fact from Gemini
+        const didYouKnowFact = await fetchDidYouKnowFactForWord(word);
+
+        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact };
 
     } catch (error) {
         console.error("Error fetching word of the day:", error);
@@ -131,6 +134,7 @@ export function displayWordOfTheDay(wordData) {
     const wordExamples = document.getElementById('word-of-the-day-examples');
     const wordEtymology = document.getElementById('word-of-the-day-etymology');
     const wordRelatedWords = document.getElementById('word-of-the-day-related-words'); // New element for related words
+    const wordDidYouKnow = document.getElementById('word-of-the-day-did-you-know'); // New element for "Did You Know?" fact
 
     if (!wordData) {
         wordTitle.textContent = "Word of the Day Unavailable";
@@ -140,6 +144,7 @@ export function displayWordOfTheDay(wordData) {
         wordExamples.innerHTML = "";
         if (wordEtymology) wordEtymology.innerHTML = "";
         if (wordRelatedWords) wordRelatedWords.innerHTML = ""; // Clear related words
+        if (wordDidYouKnow) wordDidYouKnow.innerHTML = ""; // Clear "Did You Know?" fact
         return;
     }
 
@@ -168,6 +173,14 @@ export function displayWordOfTheDay(wordData) {
         });
     }
     wordExamples.innerHTML = examplesHtml;
+
+    // "Did You Know?" section
+    let didYouKnowHtml = '';
+    if (wordData.didYouKnowFact) {
+        didYouKnowHtml += `<h3 class="section-heading">Did You Know?</h3>`;
+        didYouKnowHtml += `<p>${wordData.didYouKnowFact}</p>`;
+    }
+    if (wordDidYouKnow) wordDidYouKnow.innerHTML = didYouKnowHtml;
 
     // Etymology section
     let etymologyHtml = '';
