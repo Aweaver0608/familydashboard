@@ -93,17 +93,7 @@ export async function fetchWordOfTheDay() {
 
         // Definitions from Collegiate API are in 'def' array, each element is a definition object
         // We need to extract the 'dt' (definition text) and clean it.
-        const definitions = wordEntry.def.map(def => {
-            if (def.sseq) {
-                // sseq is an array of arrays, each containing a sense object
-                const sense = def.sseq[0][0][1]; // Get the first sense object
-                if (sense && sense.dt) {
-                    const dtText = sense.dt.find(item => item[0] === 'text');
-                    return dtText ? cleanMarkup(dtText[1]) : '';
-                }
-            }
-            return '';
-        }).filter(Boolean);
+        const definitions = wordEntry.shortdef;
 
         // Extract audio filename
         const audioFilename = wordEntry.hwi.prs?.[0]?.sound?.audio;
