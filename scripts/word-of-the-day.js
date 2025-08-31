@@ -25,7 +25,7 @@ function getAudioUrl(audioFilename) {
 // Helper function to clean Merriam-Webster markup
 function cleanMarkup(text) {
     if (!text) return '';
-    // Remove {bc}, {sx|...||}, {it}, {/it}, {d_link|...}, {a_link|...}, {gloss|...}, {dx_link|...}, {dx|...}
+    // Remove {bc}, {sx|...||}, {it}, {/it}, {d_link|...}, {a_link|...}, {gloss|...}, {dx_link|...}, {dx|...}, {sc}, {/sc}
     return text.replace(/\{.*?\}/g, '').replace(/\s+/g, ' ').trim();
 }
 
@@ -125,6 +125,7 @@ export function displayWordOfTheDay(wordData) {
     wordTitle.textContent = wordData.word;
     wordPhonetic.innerHTML = `/${wordData.phonetic}/`;
     if (wordData.audioUrl) {
+        console.log("Attempting to play audio from:", wordData.audioUrl);
         wordPhonetic.innerHTML += ` <i data-lucide="volume-2" class="w-5 h-5 inline-block cursor-pointer ml-2" onclick="new Audio('${wordData.audioUrl}').play()"></i>`;
     }
     wordPartOfSpeech.textContent = wordData.partOfSpeech;
