@@ -1,5 +1,5 @@
 import { MERRIAM_WEBSTER_COLLEGIATE_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
-import { fetchAgeAppropriateWordFromGemini } from '../scripts/gemini.js'; // Import the new function
+import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord } from '../scripts/gemini.js'; // Import the new function
 
 const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
@@ -99,25 +99,8 @@ export async function fetchWordOfTheDay() {
         const audioFilename = wordEntry.hwi.prs?.[0]?.sound?.audio;
         const audioUrl = getAudioUrl(audioFilename);
 
-        // Extract example sentences from 'def' array, looking for 'vis' (verbal illustration)
-        const examples = [];
-        wordEntry.def.forEach(def => {
-            if (def.sseq) {
-                def.sseq.forEach(sseqItem => {
-                    sseqItem.forEach(item => {
-                        if (item[0] === 'sense' && item[1].dt) {
-                            item[1].dt.forEach(dtItem => {
-                                if (dtItem[0] === 'vis') {
-                                    dtItem[1].forEach(visItem => {
-                                        examples.push(cleanMarkup(visItem.t));
-                                    });
-                                }
-                            });
-                        }
-                    });
-                });
-            }
-        });
+        // Fetch example sentences from Gemini
+        const examples = await fetchGeminiSentencesForWord(word);
 
         // Fetch thesaurus data for synonyms and antonyms (still using Intermediate Thesaurus API)
         const thesaurusResponse = await fetch(`${THESAURUS_API_URL}${word}?key=${MERRIAM_WEBSTER_THESAURUS_API_KEY}`);

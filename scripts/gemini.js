@@ -137,6 +137,22 @@ export async function fetchAgeAppropriateWordFromGemini(excludedWords = []) {
     }
 }
 
+const sentenceSchema = {
+    type: "ARRAY",
+    items: { "type": "STRING" }
+};
+
+export async function fetchGeminiSentencesForWord(word) {
+    const prompt = `Provide 3-4 distinct, age-appropriate (9-14) example sentences for the word '${word}'. Ensure the sentences are simple, clear, and demonstrate the word's meaning. Return them as a JSON array of strings, like ["Sentence 1.", "Sentence 2."].`;
+    try {
+        const sentences = await callGemini([{ parts: [{ text: prompt }] }], "gemini-2.5-flash", sentenceSchema);
+        return sentences;
+    } catch (error) {
+        console.error(`Error fetching Gemini sentences for word '${word}':`, error);
+        return [];
+    }
+}
+
 export async function fetchVerseOfTheDayFromGemini() {
     const verseTextEl = document.getElementById('verse-text');
     const verseRefEl = document.getElementById('verse-reference');
