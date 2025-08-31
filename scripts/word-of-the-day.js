@@ -111,10 +111,8 @@ export async function fetchWordOfTheDay() {
             console.warn(`Thesaurus API error for word "${word}": status ${thesaurusResponse.status}`);
         }
         const thesaurusData = await thesaurusResponse.json();
-        console.log(`Raw thesaurus data for ${word}:`, JSON.stringify(thesaurusData, null, 2)); // Added for debugging
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
-        console.log(`Extracted antonyms for ${word}:`, antonyms); // Added for debugging
 
         return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology };
 
@@ -175,17 +173,23 @@ export function displayWordOfTheDay(wordData) {
     let etymologyHtml = '';
     if (wordData.etymology) {
         etymologyHtml += `<h3 class="section-heading">Where did it come from?</h3>`;
-        etymologyHtml += `<p>${wordData.etymology}</p>`;
+        // Check if etymology is a cross-reference
+        if (wordData.etymology.toLowerCase().startsWith('see ')) {
+            const crossRefWord = wordData.etymology.substring(4).trim(); // Extract the word after "see "
+            etymologyHtml += `<p>Please refer to the etymology of <span class="font-semibold">"${crossRefWord}"</span> for more details.</p>`;
+        } else {
+            etymologyHtml += `<p>${wordData.etymology}</p>`;
+        }
     }
     if (wordEtymology) wordEtymology.innerHTML = etymologyHtml;
 
     // Synonyms and Antonyms section
     let relatedWordsHtml = '';
     if (wordData.synonyms.length > 0) {
-        relatedWordsHtml += `<h3 class="section-heading">Similar words:</h3><p>${wordData.synonyms.join(', ')}</p>`;
+        relatedWordsHtml += `<h3 class="section-heading">Synonyms (Similar words):</h3><p>${wordData.synonyms.join(', ')}</p>`;
     }
     if (wordData.antonyms.length > 0) {
-        relatedWordsHtml += `<h3 class="section-heading">Opposite words:</h3><p>${wordData.antonyms.join(', ')}</p>`;
+        relatedWordsHtml += `<h3 class="section-heading">Antonyms (Opposite words):</h3><p>${wordData.antonyms.join(', ')}</p>`;
     }
     if (wordRelatedWords) wordRelatedWords.innerHTML = relatedWordsHtml;
 }
