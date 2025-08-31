@@ -2,6 +2,7 @@ import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } fro
 import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
 import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
+import { initializeQuoteOfTheDay } from './quote-of-the-day.js';
 
 import { WEATHER_CITY_DETAILS, FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 
