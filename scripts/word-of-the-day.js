@@ -166,9 +166,10 @@ export function displayWordOfTheDay(wordData) {
     // Examples section
     let examplesHtml = '';
     if (wordData.examples && wordData.examples.length > 0) {
-        examplesHtml += `<h3 class="section-heading">See it in action!</h3>`;
+        examplesHtml += `<h3 class="section-heading">Word in Context</h3>`;
         wordData.examples.forEach(example => {
-            examplesHtml += `<p class="example-sentence">"${example}"</p>`;
+            const boldedExample = example.replace(new RegExp(`\\b${wordData.word}\\b`, 'gi'), `<b>${wordData.word}</b>`);
+            examplesHtml += `<p class="example-sentence">"${boldedExample}"</p>`;
         });
     }
     wordExamples.innerHTML = examplesHtml;
