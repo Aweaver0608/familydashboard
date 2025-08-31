@@ -142,6 +142,9 @@
 </button>
 
     <!-- Mood Tracker Button -->
+    <button id="word-of-the-day-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50" style="transform: translateX(-150%);">
+        <span id="word-of-the-day-text">W.O.D.</span>
+    </button>
     <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
         <i id="overall-mood-icon" data-lucide="smile" class="w-16 h-16"></i>
     </button>
@@ -241,6 +244,24 @@
                     <li><strong>Exact Phrase:</strong> Use double quotes <code class="bg-black/20 px-1.5 py-1 rounded">""</code> for exact phrases. <code class="bg-black/20 px-1.5 py-1 rounded">"sick at home"</code></li>
                 </ul>
                 <p>This syntax provides a flexible way to construct highly specific queries.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Word of the Day Modal -->
+    <div id="word-of-the-day-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="word-of-the-day-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold" id="word-of-the-day-title"></h2>
+                <button id="close-word-of-the-day-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <p class="text-white/70 italic text-sm mb-2" id="word-of-the-day-phonetic"></p>
+                <p class="text-white/70 italic text-sm mb-4" id="word-of-the-day-part-of-speech"></p>
+                <div id="word-of-the-day-definitions" class="space-y-2"></div>
+                <div id="word-of-the-day-examples" class="space-y-2 mt-4"></div>
             </div>
         </div>
     </div>

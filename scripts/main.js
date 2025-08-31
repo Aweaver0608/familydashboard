@@ -1,6 +1,7 @@
 import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
 import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
 import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown } from './ui.js';
+import { initializeWordOfTheDay } from './word-of-the-day.js';
 
 // --- CONFIGURATION ---
 export const WEATHER_CITY_DETAILS = {
@@ -101,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializePrayerRequests();
         initializeSmartSearchHelpModal();
         initializeSearchOperatorDropdown();
+        initializeWordOfTheDay();
     
         document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
