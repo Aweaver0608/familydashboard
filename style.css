@@ -123,10 +123,23 @@ body {
             background-color: rgba(255, 255, 255, 0.1); /* Lighter on hover */
             border-color: rgba(255, 255, 255, 0.4);
         }
-        #refresh-calendar:disabled {
+        .glass-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        /* New Square Glassmorphism Button Style */
+        .square-glass-btn {
+            border-radius: 0.5rem; /* Less rounded corners */
+            padding: 0.5rem 0.75rem; /* Adjusted padding */
+            font-size: 0.875rem; /* Smaller font size */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Slightly more opaque border */
+        }
+        .square-glass-btn:hover:not(:disabled) {
+            border-color: rgba(255, 255, 255, 0.4); /* More opaque border on hover */
+        }
+
+        /* Custom style for the refresh calendar button to make it blend better */
 
 
         .spinner {
