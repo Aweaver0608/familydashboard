@@ -784,3 +784,7 @@ body {
     color: rgba(255, 255, 255, 0.8); /* Brighter for readability */
     margin-left: 0.5rem;
 }
+
+#time-date {
+    margin-bottom: -1rem; /* Adjust this value as needed */
+}
