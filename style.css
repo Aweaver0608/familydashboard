@@ -632,3 +632,96 @@ body {
 #smart-search-help-modal-overlay {
     z-index: 1000;
 }
+
+/* Word of the Day Modal Enhancements */
+#word-of-the-day-title {
+    font-size: 3.5rem; /* Much larger */
+    font-weight: 800; /* Extra bold */
+    text-align: center;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+#word-of-the-day-phonetic {
+    font-size: 1.25rem; /* Slightly larger */
+    text-align: center;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.play-audio-icon {
+    width: 1.5rem; /* Larger icon */
+    height: 1.5rem; /* Larger icon */
+    vertical-align: middle;
+    transition: transform 0.2s ease-in-out;
+}
+
+.play-audio-icon:hover {
+    transform: scale(1.2);
+}
+
+.word-section {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-top: 1.5rem; /* Spacing between sections */
+}
+
+.section-heading {
+    font-size: 1.25rem; /* Larger heading */
+    font-weight: 600; /* Semibold */
+    margin-bottom: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.definition-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid #4285F4; /* Google Blue accent */
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.definition-item:last-child {
+    margin-bottom: 0;
+}
+
+.example-sentence {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    font-style: italic;
+    line-height: 1.5;
+    position: relative;
+    padding-left: 2.5rem; /* Space for icon */
+}
+
+.example-sentence::before {
+    content: '💡'; /* Lightbulb icon */
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+}
+
+/* Adjust list-decimal for definitions within the word-section */
+.word-section ol.list-decimal {
+    padding-left: 0; /* Remove default padding from ol */
+    list-style-position: inside; /* Keep numbers inside the card */
+}
+
+.word-section ol.list-decimal li {
+    list-style-type: decimal; /* Ensure numbering */
+    margin-left: 1.5rem; /* Indent for the number */
+}
+
+.word-section ol.list-decimal li::marker {
+    font-weight: bold;
+    color: #4285F4;
+}

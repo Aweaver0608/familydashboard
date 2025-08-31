@@ -99,6 +99,9 @@ export async function fetchWordOfTheDay() {
         const audioFilename = wordEntry.hwi.prs?.[0]?.sound?.audio;
         const audioUrl = getAudioUrl(audioFilename);
 
+        // Extract etymology
+        const etymology = wordEntry.et && wordEntry.et.length > 0 ? cleanMarkup(wordEntry.et[0][1]) : null;
+
         // Fetch example sentences from Gemini
         const examples = await fetchGeminiSentencesForWord(word);
 
@@ -111,7 +114,7 @@ export async function fetchWordOfTheDay() {
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
 
-        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples };
+        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology };
 
     } catch (error) {
         console.error("Error fetching word of the day:", error);
@@ -126,6 +129,8 @@ export function displayWordOfTheDay(wordData) {
     const wordPartOfSpeech = document.getElementById('word-of-the-day-part-of-speech');
     const wordDefinitions = document.getElementById('word-of-the-day-definitions');
     const wordExamples = document.getElementById('word-of-the-day-examples');
+    const wordEtymology = document.getElementById('word-of-the-day-etymology');
+    const wordRelatedWords = document.getElementById('word-of-the-day-related-words'); // New element for related words
 
     if (!wordData) {
         wordTitle.textContent = "Word of the Day Unavailable";
@@ -133,35 +138,54 @@ export function displayWordOfTheDay(wordData) {
         wordPartOfSpeech.textContent = "";
         wordDefinitions.innerHTML = "<p>Could not load the word of the day. Please try again later.</p>";
         wordExamples.innerHTML = "";
+        if (wordEtymology) wordEtymology.innerHTML = "";
+        if (wordRelatedWords) wordRelatedWords.innerHTML = ""; // Clear related words
         return;
     }
 
+    // Update main word details
     wordTitle.textContent = wordData.word;
-    wordPhonetic.innerHTML = `/${wordData.phonetic}/`; // Use innerHTML to allow for icon
+    wordPhonetic.innerHTML = `/${wordData.phonetic}/`;
     if (wordData.audioUrl) {
-        wordPhonetic.innerHTML += ` <i data-lucide="volume-2" class="w-5 h-5 inline-block cursor-pointer ml-2" onclick="new Audio('${wordData.audioUrl}').play()"></i>`;
+        wordPhonetic.innerHTML += ` <i data-lucide="volume-2" class="play-audio-icon inline-block cursor-pointer ml-2" onclick="new Audio('${wordData.audioUrl}').play()"></i>`;
     }
     wordPartOfSpeech.textContent = wordData.partOfSpeech;
 
-    wordDefinitions.innerHTML = wordData.definitions.map((def, index) => `
-        <p>${index + 1}. ${def}</p>
-    `).join('');
+    // Definitions section
+    wordDefinitions.innerHTML = `
+        <h3 class="section-heading">What does it mean?</h3>
+        <ol class="list-decimal list-inside pl-4">
+            ${wordData.definitions.map((def, index) => `<li class="definition-item">${def}</li>`).join('')}
+        </ol>
+    `;
 
+    // Examples section
     let examplesHtml = '';
     if (wordData.examples && wordData.examples.length > 0) {
-        examplesHtml += `<p class="font-semibold mt-4">Examples:</p>`;
+        examplesHtml += `<h3 class="section-heading">See it in action!</h3>`;
         wordData.examples.forEach(example => {
-            examplesHtml += `<p class="italic">"${example}"</p>`;
+            examplesHtml += `<p class="example-sentence">"${example}"</p>`;
         });
     }
+    wordExamples.innerHTML = examplesHtml;
 
+    // Etymology section
+    let etymologyHtml = '';
+    if (wordData.etymology) {
+        etymologyHtml += `<h3 class="section-heading">Where did it come from?</h3>`;
+        etymologyHtml += `<p>${wordData.etymology}</p>`;
+    }
+    if (wordEtymology) wordEtymology.innerHTML = etymologyHtml;
+
+    // Synonyms and Antonyms section
+    let relatedWordsHtml = '';
     if (wordData.synonyms.length > 0) {
-        examplesHtml += `<p class="font-semibold mt-4">Synonyms:</p><p>${wordData.synonyms.join(', ')}</p>`;
+        relatedWordsHtml += `<h3 class="section-heading">Similar words:</h3><p>${wordData.synonyms.join(', ')}</p>`;
     }
     if (wordData.antonyms.length > 0) {
-        examplesHtml += `<p class="font-semibold mt-2">Antonyms:</p><p>${wordData.antonyms.join(', ')}</p>`;
+        relatedWordsHtml += `<h3 class="section-heading">Opposite words:</h3><p>${wordData.antonyms.join(', ')}</p>`;
     }
-    wordExamples.innerHTML = examplesHtml;
+    if (wordRelatedWords) wordRelatedWords.innerHTML = relatedWordsHtml;
 }
 
 export async function initializeWordOfTheDay() {
