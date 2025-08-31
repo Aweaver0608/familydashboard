@@ -35,11 +35,7 @@ export async function fetchWordOfTheDay() {
         const word = wordEntry.meta.id.split(':')[0];
         const phonetic = wordEntry.hwi.prs && wordEntry.hwi.prs[0] ? wordEntry.hwi.prs[0].mw : 'N/A';
         const partOfSpeech = wordEntry.fl;
-        const definitions = wordEntry.def[0].sseq.map(sseqItem => {
-            const dt = sseqItem[0][1].dt;
-            const definitionText = dt.find(item => item[0] === 'text');
-            return definitionText ? definitionText[1] : '';
-        }).filter(Boolean);
+        const definitions = wordEntry.shortdef;
 
         // Fetch thesaurus data for synonyms and antonyms
         const thesaurusResponse = await fetch(`${THESAURUS_API_URL}${word}?key=${MERRIAM_WEBSTER_THESAURUS_API_KEY}`);
