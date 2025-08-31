@@ -336,49 +336,27 @@ function getWeatherIcon(shortForecast, isDaytime) {
     }
 
     // Prioritize isDaytime for icon selection
-    if (isDaytime) {
-        if (forecast.includes('thunderstorm')) {
-            iconName = 'thunderstorms-day'; // Specific day version
-        } else if (forecast.includes('snow')) {
-            iconName = 'snow-day'; // Specific day version
-        } else if (forecast.includes('rain') || forecast.includes('drizzle') || forecast.includes('showers')) {
-            iconName = 'rain-day'; // Specific day version
-        } else if (forecast.includes('overcast')) {
-            iconName = 'overcast-day'; // Specific day version
-        } else if (forecast.includes('cloudy')) {
-            iconName = 'cloudy-day'; // Specific day version
-        } else if (forecast.includes('partly') || forecast.includes('mostly clear')) {
-            iconName = 'partly-cloudy-day';
-        } else if (forecast.includes('sunny') || forecast.includes('clear')) {
-            iconName = 'clear-day';
-        } else if (forecast.includes('fog') || forecast.includes('mist')) {
-            iconName = 'mist-day'; // Specific day version
-        } else {
-            iconName = 'clear-day'; // Default day
-        }
-    } else { // isDaytime is false (night)
-        if (forecast.includes('thunderstorm')) {
-            iconName = 'thunderstorms-night'; // Specific night version
-        } else if (forecast.includes('snow')) {
-            iconName = 'snow-night'; // Specific night version
-        } else if (forecast.includes('rain') || forecast.includes('drizzle') || forecast.includes('showers')) {
-            iconName = 'rain-night'; // Specific night version
-        } else if (forecast.includes('overcast')) {
-            iconName = 'overcast-night'; // Specific night version
-        } else if (forecast.includes('cloudy')) {
-            iconName = 'cloudy-night'; // Specific night version
-        } else if (forecast.includes('partly') || forecast.includes('mostly clear')) {
-            iconName = 'partly-cloudy-night';
-        } else if (forecast.includes('sunny') || forecast.includes('clear')) {
-            iconName = 'clear-night';
-        } else if (forecast.includes('fog') || forecast.includes('mist')) {
-            iconName = 'mist-night'; // Specific night version
-        } else {
-            iconName = 'clear-night'; // Default night
-        }
+    if (forecast.includes('thunderstorm')) {
+        iconName = 'thunderstorms';
+    } else if (forecast.includes('snow')) {
+        iconName = 'snow';
+    } else if (forecast.includes('rain') || forecast.includes('drizzle') || forecast.includes('showers')) {
+        iconName = 'rain';
+    } else if (forecast.includes('overcast')) {
+        iconName = 'overcast';
+    } else if (forecast.includes('cloudy')) {
+        iconName = 'cloudy';
+    } else if (forecast.includes('partly') || forecast.includes('mostly clear')) {
+        iconName = isDaytime ? 'partly-cloudy-day' : 'partly-cloudy-night';
+    } else if (forecast.includes('sunny') || forecast.includes('clear')) {
+        iconName = isDaytime ? 'clear-day' : 'clear-night';
+    } else if (forecast.includes('fog') || forecast.includes('mist')) {
+        iconName = 'mist';
+    } else {
+        iconName = isDaytime ? 'clear-day' : 'clear-night'; // Default
     }
     
-    return `https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/${iconName}.svg`;
+    return `https://raw.githubusercontent.com/basmilius/weather-icons/master/dist/fill/${iconName}.svg`;
 }
 
 function initializeGeminiChat() {
