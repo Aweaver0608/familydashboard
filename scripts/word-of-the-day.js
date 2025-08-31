@@ -6,6 +6,29 @@ const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithes
 
 let cachedWordData = null;
 
+// Helper function to construct audio URL
+function getAudioUrl(audioFilename) {
+    if (!audioFilename) return null;
+    let subdirectory;
+    if (audioFilename.startsWith('bix')) {
+        subdirectory = 'bix';
+    } else if (audioFilename.startsWith('gg')) {
+        subdirectory = 'gg';
+    } else if (audioFilename.match(/^[0-9]/)) {
+        subdirectory = 'number';
+    } else {
+        subdirectory = audioFilename.charAt(0);
+    }
+    return `https://media.merriam-webster.com/soundc11/${subdirectory}/${audioFilename}.mp3`;
+}
+
+// Helper function to clean Merriam-Webster markup
+function cleanMarkup(text) {
+    if (!text) return '';
+    // Remove {bc}, {sx|...||}, {it}, {/it}, {d_link|...}, {a_link|...}, {gloss|...}, {dx_link|...}, {dx|...}
+    return text.replace(/\{.*?\}/g, '').replace(/\s+/g, ' ').trim();
+}
+
 export async function fetchWordOfTheDay() {
     try {
         const randomWord = await fetchAgeAppropriateWordFromGemini(); // Get word from Gemini
@@ -22,7 +45,7 @@ export async function fetchWordOfTheDay() {
         }
         const dictionaryData = await dictionaryResponse.json();
 
-        console.log(`Processing word: ${randomWord}. Raw dictionary data:`, dictionaryData);
+        console.log(`Processing word: ${randomWord}. Raw dictionary data:`, JSON.stringify(dictionaryData, null, 2));
 
         if (!dictionaryData || dictionaryData.length === 0 || typeof dictionaryData[0] === 'string') {
             console.warn(`No valid dictionary data for ${randomWord}. API response:`, dictionaryData);
@@ -41,6 +64,30 @@ export async function fetchWordOfTheDay() {
         const partOfSpeech = wordEntry.fl;
         const definitions = wordEntry.shortdef;
 
+        // Extract audio filename
+        const audioFilename = wordEntry.hwi.prs?.[0]?.sound?.audio;
+        const audioUrl = getAudioUrl(audioFilename);
+
+        // Extract example sentences
+        const examples = [];
+        wordEntry.def.forEach(def => {
+            if (def.sseq) {
+                def.sseq.forEach(sseqItem => {
+                    sseqItem.forEach(item => {
+                        if (item[0] === 'sense' && item[1].dt) {
+                            item[1].dt.forEach(dtItem => {
+                                if (dtItem[0] === 'vis') {
+                                    dtItem[1].forEach(visItem => {
+                                        examples.push(cleanMarkup(visItem.t));
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            }
+        });
+
         // Fetch thesaurus data for synonyms and antonyms
         const thesaurusResponse = await fetch(`${THESAURUS_API_URL}${word}?key=${MERRIAM_WEBSTER_THESAURUS_API_KEY}`);
         if (!thesaurusResponse.ok) {
@@ -50,7 +97,7 @@ export async function fetchWordOfTheDay() {
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
 
-        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms };
+        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples };
 
     } catch (error) {
         console.error("Error fetching word of the day:", error);
@@ -76,7 +123,10 @@ export function displayWordOfTheDay(wordData) {
     }
 
     wordTitle.textContent = wordData.word;
-    wordPhonetic.textContent = `/${wordData.phonetic}/`;
+    wordPhonetic.innerHTML = `/${wordData.phonetic}/`;
+    if (wordData.audioUrl) {
+        wordPhonetic.innerHTML += ` <i data-lucide="volume-2" class="w-5 h-5 inline-block cursor-pointer ml-2" onclick="new Audio('${wordData.audioUrl}').play()"></i>`;
+    }
     wordPartOfSpeech.textContent = wordData.partOfSpeech;
 
     wordDefinitions.innerHTML = wordData.definitions.map((def, index) => `
@@ -84,6 +134,13 @@ export function displayWordOfTheDay(wordData) {
     `).join('');
 
     let examplesHtml = '';
+    if (wordData.examples && wordData.examples.length > 0) {
+        examplesHtml += `<p class="font-semibold mt-4">Examples:</p>`;
+        wordData.examples.forEach(example => {
+            examplesHtml += `<p class="italic">"${example}"</p>`;
+        });
+    }
+
     if (wordData.synonyms.length > 0) {
         examplesHtml += `<p class="font-semibold mt-4">Synonyms:</p><p>${wordData.synonyms.join(', ')}</p>`;
     }
