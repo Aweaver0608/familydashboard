@@ -149,12 +149,11 @@ export function displayWordOfTheDay(wordData) {
     }
 
     // Update main word details
-    wordTitle.textContent = wordData.word;
+    wordTitle.innerHTML = `${wordData.word} <span class="text-base italic text-white/70">${wordData.partOfSpeech}</span>`;
     wordPhonetic.innerHTML = `/${wordData.phonetic}/`;
     if (wordData.audioUrl) {
         wordPhonetic.innerHTML += ` <i data-lucide="volume-2" class="play-audio-icon inline-block cursor-pointer ml-2" onclick="new Audio('${wordData.audioUrl}').play()"></i>`;
     }
-    wordPartOfSpeech.textContent = wordData.partOfSpeech;
 
     // Definitions section
     wordDefinitions.innerHTML = `
@@ -240,5 +239,6 @@ export async function initializeWordOfTheDay() {
     cachedWordData = await fetchWordOfTheDay();
     if (cachedWordData) {
         document.getElementById('word-of-the-day-text').textContent = cachedWordData.word;
+        wordOfTheDayBtn.classList.remove('hidden'); // Make the button visible
     }
 }
