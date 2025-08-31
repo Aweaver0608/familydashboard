@@ -1,26 +1,41 @@
 import { MERRIAM_WEBSTER_DICTIONARY_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
+import { fetchAgeAppropriateWordFromGemini } from '../scripts/gemini.js'; // Import the new function
 
-const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/sd4/json/";
+const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/sd3/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
 
 export async function fetchWordOfTheDay() {
     try {
-        // Fetch word of the day from Merriam-Webster Dictionary API
-        const response = await fetch(`${DICTIONARY_API_URL}word_of_the_day?key=${MERRIAM_WEBSTER_DICTIONARY_API_KEY}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        const wordData = data[0]; // Assuming the first entry is the word of the day
+        const randomWord = await fetchAgeAppropriateWordFromGemini(); // Get word from Gemini
 
-        if (!wordData || !wordData.meta || !wordData.hwi || !wordData.def) {
-            throw new Error("Invalid word of the day data structure.");
+        if (!randomWord) {
+            console.warn("Gemini did not return a word.");
+            return null;
         }
 
-        const word = wordData.meta.id.split(':')[0];
-        const phonetic = wordData.hwi.prs && wordData.hwi.prs[0] ? wordData.hwi.prs[0].mw : 'N/A';
-        const partOfSpeech = wordData.fl;
-        const definitions = wordData.def[0].sseq.map(sseqItem => {
+        // Fetch definition from Merriam-Webster Dictionary API
+        const dictionaryResponse = await fetch(`${DICTIONARY_API_URL}${randomWord}?key=${MERRIAM_WEBSTER_DICTIONARY_API_KEY}`);
+        if (!dictionaryResponse.ok) {
+            throw new Error(`HTTP error! status: ${dictionaryResponse.status}`);
+        }
+        const dictionaryData = await dictionaryResponse.json();
+
+        if (!dictionaryData || dictionaryData.length === 0 || typeof dictionaryData[0] === 'string') {
+            console.warn(`No valid dictionary data for ${randomWord}. API response:`, dictionaryData);
+            return null;
+        }
+
+        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.startsWith(randomWord));
+
+        if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
+            console.warn(`Invalid dictionary data structure for ${randomWord}.`);
+            return null;
+        }
+
+        const word = wordEntry.meta.id.split(':')[0];
+        const phonetic = wordEntry.hwi.prs && wordEntry.hwi.prs[0] ? wordEntry.hwi.prs[0].mw : 'N/A';
+        const partOfSpeech = wordEntry.fl;
+        const definitions = wordEntry.def[0].sseq.map(sseqItem => {
             const dt = sseqItem[0][1].dt;
             const definitionText = dt.find(item => item[0] === 'text');
             return definitionText ? definitionText[1] : '';
@@ -111,7 +126,7 @@ export async function initializeWordOfTheDay() {
         });
     }
 
-        // Optionally, fetch and display the word of the day on initial load
+    // Optionally, fetch and display the word of the day on initial load
     const initialWordData = await fetchWordOfTheDay();
     if (initialWordData) {
         document.getElementById('word-of-the-day-text').textContent = initialWordData.word;

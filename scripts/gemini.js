@@ -125,6 +125,17 @@ async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchem
      throw lastError;
 }
 
+export async function fetchAgeAppropriateWordFromGemini() {
+    const prompt = `Provide a single, interesting, and age-appropriate English word for children aged 9-14. Do not include any definitions, explanations, or extra text, just the word itself.`;
+    try {
+        const word = await callGemini([{ parts: [{ text: prompt }] }]);
+        return word.trim();
+    } catch (error) {
+        console.error("Error fetching age-appropriate word from Gemini:", error);
+        return null;
+    }
+}
+
 export async function fetchVerseOfTheDayFromGemini() {
     const verseTextEl = document.getElementById('verse-text');
     const verseRefEl = document.getElementById('verse-reference');
