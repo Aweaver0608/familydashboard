@@ -20,6 +20,8 @@ export async function fetchWordOfTheDay() {
         }
         const dictionaryData = await dictionaryResponse.json();
 
+        console.log(`Processing word: ${randomWord}. Raw dictionary data:`, dictionaryData);
+
         if (!dictionaryData || dictionaryData.length === 0 || typeof dictionaryData[0] === 'string') {
             console.warn(`No valid dictionary data for ${randomWord}. API response:`, dictionaryData);
             return null;
@@ -28,14 +30,18 @@ export async function fetchWordOfTheDay() {
         const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.startsWith(randomWord));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
-            console.warn(`Invalid dictionary data structure for ${randomWord}. Raw data:`, dictionaryData);
+            console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, dictionaryData);
             return null;
         }
 
         const word = wordEntry.meta.id.split(':')[0];
         const phonetic = wordEntry.hwi.prs && wordEntry.hwi.prs[0] ? wordEntry.hwi.prs[0].mw : 'N/A';
         const partOfSpeech = wordEntry.fl;
-        const definitions = wordEntry.shortdef;
+        const definitions = wordEntry.def[0].sseq.map(sseqItem => {
+            const dt = sseqItem[0][1].dt;
+            const definitionText = dt.find(item => item[0] === 'text');
+            return definitionText ? definitionText[1] : '';
+        }).filter(Boolean);
 
         // Fetch thesaurus data for synonyms and antonyms
         const thesaurusResponse = await fetch(`${THESAURUS_API_URL}${word}?key=${MERRIAM_WEBSTER_THESAURUS_API_KEY}`);
