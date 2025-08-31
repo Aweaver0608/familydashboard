@@ -1,7 +1,7 @@
 import { MERRIAM_WEBSTER_DICTIONARY_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
 
-const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
-const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/thesaurus/json/";
+const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/sd4/json/";
+const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
 
 export async function fetchWordOfTheDay() {
     try {
