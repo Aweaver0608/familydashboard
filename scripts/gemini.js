@@ -382,6 +382,21 @@ export async function fetchConversationStarter() {
     } finally {
         refreshBtn.disabled = false;
     }
+} 
+
+const didYouKnowSchema = {
+    type: "STRING"
+};
+
+export async function fetchDidYouKnowFactForWord(word) {
+    const prompt = `Provide a single, short, and interesting "Did You Know?" fact about the word "${word}" that would appeal to children aged 9-14. The fact should be concise and engaging. Do not include any introductory phrases like "Did you know that..." or "Fun fact:". Just provide the fact.`;
+    try {
+        const fact = await callGemini([{ parts: [{ text: prompt }] }], "gemini-2.5-flash", didYouKnowSchema);
+        return fact.trim();
+    } catch (error) {
+        console.error(`Error fetching "Did You Know?" fact for word '${word}':`, error);
+        return null;
+    }
 }
 
 export async function showFeelingResponse(feeling, coreEmotion) {
