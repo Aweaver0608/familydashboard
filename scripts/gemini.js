@@ -1,60 +1,6 @@
-import { GEMINI_API_KEY } from '../config.js';
+import { GEMINI_API_KEY, verseInsightSchema, activitySchema, feelingInsightSchema } from '../config.js';
 import { renderVerseCarousel, renderActivityCarousel, renderChatHistory, updateVerseFromLocalList } from './ui.js';
-import { addVerseToHistory, getVerseHistory, getRawWeatherData, setRawWeatherData, getCurrentVerse, setCurrentVerse, getActivityIdeas, setActivityIdeas, getVerseInsights, setVerseInsights, getCurrentIdeaIndex, setCurrentIdeaIndex, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory, setGeminiChatHistory } from './main.js';
-
-// --- JSON Schemas for Gemini ---
-const verseInsightSchema = {
-    type: "OBJECT",
-    properties: {
-        "devotional": {
-            "type": "OBJECT",
-            "properties": {
-                "title": { "type": "STRING" },
-                "story": { "type": "STRING" },
-                "big_idea": { "type": "STRING" },
-                "application_questions": { "type": "ARRAY", "items": { "type": "STRING" } },
-                "prayer": { "type": "STRING" }
-            },
-            "required": ["title", "story", "big_idea", "application_questions", "prayer"]
-        },
-        "context": { "type": "STRING" }
-    },
-    required: ["devotional", "context"]
-};
-
-const activitySchema = {
-    type: "OBJECT",
-    properties: {
-        "activities": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "properties": { "title": { "type": "STRING" }, "description": { "type": "STRING" } },
-                "required": ["title", "description"]
-            }
-        }
-    }, 
-    "required": ["activities"]
-};
-
-const feelingInsightSchema = {
-    type: "OBJECT",
-    properties: {
-        "explanation": { "type": "STRING" },
-        "strategies": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "properties": {
-                    "title": { "type": "STRING" },
-                    "description": { "type": "STRING" }
-                },
-                "required": ["title", "description"]
-            }
-        }
-    },
-    required: ["explanation", "strategies"]
-};
+import { addVerseToHistory, getVerseHistory, getRawWeatherData, getCurrentVerse, setCurrentVerse, getActivityIdeas, setActivityIdeas, getGeminiChatHistory, setGeminiChatHistory } from './main.js';
 
 async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
      const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY; //Use environment api key if available

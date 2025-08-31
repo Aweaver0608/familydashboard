@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { FAMILY_MEMBERS } from './main.js';
+import { FAMILY_MEMBERS } from '../config.js';
 import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 
 const firebaseConfigStr = typeof __firebase_config !== 'undefined' 

@@ -1,4 +1,5 @@
-import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY, getRawWeatherData, setRawWeatherData, getCurrentVerse, setCurrentVerse, getActivityIdeas, setActivityIdeas, getVerseInsights, setVerseInsights, getCurrentIdeaIndex, setCurrentIdeaIndex, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory, setGeminiChatHistory } from './main.js';
+import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
+import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
 import { setCurrentPrayerDocId } from './firebase.js';
 import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
 
