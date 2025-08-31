@@ -30,7 +30,7 @@ export async function fetchWordOfTheDay() {
         const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.toLowerCase().startsWith(randomWord.toLowerCase()));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
-            console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, dictionaryData);
+            console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
             return null;
         }
 
@@ -49,13 +49,8 @@ export async function fetchWordOfTheDay() {
             console.warn(`Thesaurus API error for word "${word}": status ${thesaurusResponse.status}`);
         }
         const thesaurusData = await thesaurusResponse.json();
-        let synonyms = [];
-        let antonyms = [];
-
-        if (thesaurusData && thesaurusData[0] && thesaurusData[0].meta) {
-            synonyms = thesaurusData[0].meta.syns ? thesaurusData[0].meta.syns[0] : [];
-            antonyms = thesaurusData[0].meta.ants ? thesaurusData[0].meta.ants[0] : [];
-        }
+        let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
+        let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
 
         return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms };
 
