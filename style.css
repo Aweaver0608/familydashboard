@@ -130,13 +130,25 @@ body {
 
         /* New Square Glassmorphism Button Style */
         .square-glass-btn {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Slightly more opaque border */
             border-radius: 0.5rem; /* Less rounded corners */
             padding: 0.5rem 0.75rem; /* Adjusted padding */
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
             font-size: 0.875rem; /* Smaller font size */
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Slightly more opaque border */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
         }
         .square-glass-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.4); /* More opaque border on hover */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1);
         }
 
         /* Custom style for the refresh calendar button to make it blend better */
