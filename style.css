@@ -757,7 +757,7 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Darker transparent background */
+    background: rgba(0, 0, 0, 0.2); /* Darker transparent background */
     backdrop-filter: blur(5px); /* A more subtle blur */
     color: white;
     text-align: center;
