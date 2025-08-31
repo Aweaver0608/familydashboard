@@ -258,7 +258,7 @@ async function fetchWeather() {
             }
             if (period.isDaytime) {
                 uniqueDays[dayName].high = Math.max(uniqueDays[dayName].high, period.temperature);
-                uniqueDays[dayName].icon = getWeatherIcon(period.shortForecast, period.isDaytime);
+                uniqueDays[dayName].icon = getWeatherIcon(period.shortForecast, true);
             } else {
                 uniqueDays[dayName].low = Math.min(uniqueDays[dayName].low, period.temperature);
             }
@@ -288,7 +288,7 @@ async function fetchWeather() {
             dayWrapper.innerHTML = `
                 <p class="day-name" style="font-size:1.25rem; font-weight:700; margin-bottom:-0.75rem;">${dayName}</p>
                 <div class="flex flex-col items-center justify-center">
-                    <img class="w-12 h-12 my-1" src="${getWeatherIcon(data.icon)}" alt="Daily forecast icon">
+                    <img class="w-12 h-12 my-1" src="${data.icon}" alt="Daily forecast icon">
                     <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${data.high}°/${lowDisplay}°</span>
                 </div>
                 <div class="flex items-center gap-1 text-xs">
