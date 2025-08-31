@@ -1,0 +1,5 @@
+export const WEATHER_API_KEY = "075f78cd37cba4d6a3acc3289f567757";
+export const GEMINI_API_KEY = "AIzaSyAX6HEd5kZBFjzsNn4wixNv3-Ah3yILRl0";
+export const MERRIAM_WEBSTER_DICTIONARY_API_KEY = "50a3a0ee-c6ec-4f2c-8cb0-b17dd80f75a1";
+export const MERRIAM_WEBSTER_THESAURUS_API_KEY = "e012d782-cc43-4bc4-9644-e3a521fa1038";
+export const MERRIAM_WEBSTER_COLLEGIATE_API_KEY = "f197f19e-dfd4-4e19-baf6-dd705ec0d7d1";
