@@ -80,7 +80,7 @@ export async function fetchWordOfTheDay() {
             return null;
         }
 
-        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.toLowerCase().startsWith(randomWord.toLowerCase()));
+        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.stems && entry.meta.stems.includes(randomWord.toLowerCase()));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
             console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
