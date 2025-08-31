@@ -1,9 +1,11 @@
 import { MERRIAM_WEBSTER_COLLEGIATE_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
+import { fetchAgeAppropriateWordFromGemini } from '../scripts/gemini.js'; // Import the new function
 
 const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
 
 let cachedWordData = null;
+const WORD_HISTORY_LENGTH = 50; // Keep history of last 50 words
 
 // Helper function to construct audio URL
 function getAudioUrl(audioFilename) {
@@ -29,45 +31,63 @@ function cleanMarkup(text) {
     return text.replace(/\{.*?\}/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Functions to manage word history in localStorage
+function getWordHistory() {
+    try {
+        return JSON.parse(localStorage.getItem('wordHistory') || '[]');
+    } catch (e) {
+        console.error("Error parsing word history from localStorage:", e);
+        return [];
+    }
+}
+
+function addWordToHistory(word) {
+    let history = getWordHistory();
+    // Remove the word if it already exists to move it to the end (most recent)
+    history = history.filter(w => w.toLowerCase() !== word.toLowerCase());
+    history.push(word);
+    // Trim history to WORD_HISTORY_LENGTH
+    if (history.length > WORD_HISTORY_LENGTH) {
+        history = history.slice(history.length - WORD_HISTORY_LENGTH);
+    }
+    localStorage.setItem('wordHistory', JSON.stringify(history));
+}
+
 export async function fetchWordOfTheDay() {
     try {
-        // Step 1: Fetch the word of the day (which is just the word string)
-        const wordOfTheDayResponse = await fetch(`${DICTIONARY_API_URL}word_of_the_day?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
-        if (!wordOfTheDayResponse.ok) {
-            throw new Error(`HTTP error! status: ${wordOfTheDayResponse.status}`);
-        }
-        const wordOfTheDayData = await wordOfTheDayResponse.json();
+        const wordHistory = getWordHistory();
+        const randomWord = await fetchAgeAppropriateWordFromGemini(wordHistory); // Pass history to Gemini
 
-        console.log(`Raw word of the day data:`, JSON.stringify(wordOfTheDayData, null, 2));
-
-        if (!wordOfTheDayData || wordOfTheDayData.length === 0 || typeof wordOfTheDayData[0] !== 'string') {
-            console.warn(`Unexpected word of the day data format. API response:`, wordOfTheDayData);
+        if (!randomWord) {
+            console.warn("Gemini did not return a word.");
             return null;
         }
 
-        const word = wordOfTheDayData[0]; // The actual word is the first element
+        // Add the fetched word to history
+        addWordToHistory(randomWord);
 
-        // Step 2: Fetch the full definition for that word
-        const dictionaryResponse = await fetch(`${DICTIONARY_API_URL}${word}?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
+        // Fetch definition from Merriam-Webster Collegiate Dictionary API
+        const dictionaryResponse = await fetch(`${DICTIONARY_API_URL}${randomWord}?key=${MERRIAM_WEBSTER_COLLEGIATE_API_KEY}`);
         if (!dictionaryResponse.ok) {
             throw new Error(`HTTP error! status: ${dictionaryResponse.status}`);
         }
         const dictionaryData = await dictionaryResponse.json();
 
-        console.log(`Processing word: ${word}. Raw dictionary data:`, JSON.stringify(dictionaryData, null, 2));
+        console.log(`Processing word: ${randomWord}. Raw dictionary data:`, JSON.stringify(dictionaryData, null, 2));
 
         if (!dictionaryData || dictionaryData.length === 0 || typeof dictionaryData[0] === 'string') {
-            console.warn(`No valid dictionary data for ${word}. API response:`, dictionaryData);
+            console.warn(`No valid dictionary data for ${randomWord}. API response:`, dictionaryData);
             return null;
         }
 
-        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.toLowerCase().startsWith(word.toLowerCase()));
+        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.toLowerCase().startsWith(randomWord.toLowerCase()));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
-            console.warn(`Invalid dictionary data structure for ${word}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
+            console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
             return null;
         }
 
+        const word = wordEntry.meta.id.split(':')[0];
         const phonetic = wordEntry.hwi.prs && wordEntry.hwi.prs[0] ? wordEntry.hwi.prs[0].mw : 'N/A';
         const partOfSpeech = wordEntry.fl;
 
