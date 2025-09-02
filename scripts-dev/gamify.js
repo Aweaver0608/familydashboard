@@ -1,4 +1,6 @@
 import { addDailyChallengeEntry, getPin, setPin } from './firebase.js';
+import { getCachedWordData as getWordOfTheDayData } from './word-of-the-day.js';
+import { getSelectedPersonForMood } from './main.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const dailyChallengeBtn = document.getElementById('daily-challenge-btn');
@@ -22,28 +24,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentQuizStep = null;
 
-    // Mock functions for now, will be properly imported/accessed later
     function getVerseInsights() {
-        return {
-            devotional: {
-                application_questions: [
-                    "How can you apply this verse to your life today?",
-                    "What is one thing this verse teaches you about God?",
-                    "How does this verse encourage you?"
-                ]
+        try {
+            const storedData = localStorage.getItem('verseData');
+            if (storedData) {
+                return JSON.parse(storedData).insights;
             }
-        };
+        } catch (e) {
+            console.error("Error reading verse insights from localStorage:", e);
+        }
+        return null;
     }
 
     function getCachedWordData() {
-        return {
-            word: "Serendipity",
-            definitions: [
-                "The occurrence and development of events by chance in a happy or beneficial way.",
-                "An aptitude for making desirable discoveries by accident.",
-                "A pleasant surprise."
-            ]
-        };
+        return getWordOfTheDayData();
     }
 
     function updateDailyChallengeDialog() {
