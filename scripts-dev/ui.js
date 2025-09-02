@@ -289,12 +289,11 @@ async function showPinEntryForFeelingSelection(personName) {
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
 
-    // Remove previous listeners to prevent duplicates
-    const oldSubmitPinEntryBtn = submitPinEntryBtn.cloneNode(true);
-    submitPinEntryBtn.parentNode.replaceChild(oldSubmitPinEntryBtn, submitPinEntryBtn);
-    const newSubmitPinEntryBtn = oldSubmitPinEntryBtn;
+    // Ensure no duplicate listeners by removing any existing one before adding
+    submitPinEntryBtn.removeEventListener('click', window.handlePinSubmit); // Remove previous listener if it exists
 
-    newSubmitPinEntryBtn.addEventListener('click', async () => {
+    // Define the event handler function
+    window.handlePinSubmit = async () => { // Attach to window for easy removal if needed, or define within scope
         const enteredPin = pinEntryInput.value;
 
         if (isCreateMode) {
@@ -315,6 +314,7 @@ async function showPinEntryForFeelingSelection(personName) {
             pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
             displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
         } else { // Enter PIN mode
+            const storedPin = await getPin(currentPinEntryPerson); // Re-fetch storedPin here
             if (enteredPin === storedPin) {
                 pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
                 displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
@@ -324,7 +324,10 @@ async function showPinEntryForFeelingSelection(personName) {
                 pinEntryInput.value = '';
             }
         }
-    });
+    };
+
+    // Attach the new listener
+    submitPinEntryBtn.addEventListener('click', window.handlePinSubmit);
 
     closePinEntryModalBtn.addEventListener('click', () => {
         pinEntryModalOverlay.style.display = 'none';
