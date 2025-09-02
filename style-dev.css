@@ -6,8 +6,6 @@
     max-width: 90vw; /* Responsive width */
     height: auto; /* Adjust height based on content */
     max-height: calc(100vh - 3.5rem); /* Max height, accounting for top offset and some bottom margin */
-    background: rgba(0, 0, 0, 0.6); /* Keep background for the modal itself */
-    backdrop-filter: blur(5px); /* Keep blur for the modal itself */
     z-index: 990; /* Below quote banner (1000) but above other content */
     pointer-events: auto; /* Re-enable pointer events for the overlay */
     display: flex; /* Keep flex for centering content */
