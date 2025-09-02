@@ -251,15 +251,40 @@ function showNameSelection() {
 async function showPinEntryForFeelingSelection(personName) {
     currentPinEntryPerson = personName;
     const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+    const pinModalTitle = document.getElementById('pin-modal-title');
+    const pinEnterMessage = document.getElementById('pin-enter-message');
+    const pinCreateMessage = document.getElementById('pin-create-message');
     const pinEntryPersonNameSpan = document.getElementById('pin-entry-person-name');
+    const pinEntryPersonNameCreateSpan = document.getElementById('pin-entry-person-name-create');
     const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
     const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
     const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn');
     const closePinEntryModalBtn = document.getElementById('close-pin-entry-modal');
 
     pinEntryPersonNameSpan.textContent = personName;
+    pinEntryPersonNameCreateSpan.textContent = personName; // For the create message
     pinEntryInput.value = ''; // Clear previous input
+    pinConfirmInput.value = ''; // Clear previous input
     pinEntryErrorMessage.classList.add('hidden'); // Hide any previous error messages
+
+    const storedPin = await getPin(currentPinEntryPerson);
+    let isCreateMode = !storedPin;
+
+    // Configure modal based on mode
+    if (isCreateMode) {
+        pinModalTitle.textContent = 'Create PIN';
+        pinEnterMessage.classList.add('hidden');
+        pinCreateMessage.classList.remove('hidden');
+        pinConfirmInput.classList.remove('hidden');
+        submitPinEntryBtn.textContent = 'Create PIN';
+    } else {
+        pinModalTitle.textContent = 'Enter PIN';
+        pinEnterMessage.classList.remove('hidden');
+        pinCreateMessage.classList.add('hidden');
+        pinConfirmInput.classList.add('hidden');
+        submitPinEntryBtn.textContent = 'Submit PIN';
+    }
 
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
@@ -271,23 +296,30 @@ async function showPinEntryForFeelingSelection(personName) {
 
     newSubmitPinEntryBtn.addEventListener('click', async () => {
         const enteredPin = pinEntryInput.value;
-        const storedPin = await getPin(currentPinEntryPerson);
 
-        if (storedPin && enteredPin === storedPin) {
+        if (isCreateMode) {
+            const confirmedPin = pinConfirmInput.value;
+            if (enteredPin === '' || confirmedPin === '') {
+                pinEntryErrorMessage.textContent = "PIN cannot be empty.";
+                pinEntryErrorMessage.classList.remove('hidden');
+                return;
+            }
+            if (enteredPin !== confirmedPin) {
+                pinEntryErrorMessage.textContent = "PINs do not match. Please try again.";
+                pinEntryErrorMessage.classList.remove('hidden');
+                pinEntryInput.value = '';
+                pinConfirmInput.value = '';
+                return;
+            }
+            await setPin(currentPinEntryPerson, enteredPin);
             pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
             displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
-        } else if (storedPin && enteredPin !== storedPin) {
-            pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
-            pinEntryErrorMessage.classList.remove('hidden');
-            pinEntryInput.value = '';
-        } else { // No PIN stored, prompt for creation
-            const newPin = prompt(`No PIN found for ${currentPinEntryPerson}. Please create a new PIN:`);
-            if (newPin) {
-                await setPin(currentPinEntryPerson, newPin);
+        } else { // Enter PIN mode
+            if (enteredPin === storedPin) {
                 pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
                 displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
             } else {
-                pinEntryErrorMessage.textContent = "PIN creation cancelled.";
+                pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
                 pinEntryErrorMessage.classList.remove('hidden');
                 pinEntryInput.value = '';
             }
