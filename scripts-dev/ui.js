@@ -280,9 +280,17 @@ async function showPinEntryForFeelingSelection(personName) {
             pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
             pinEntryErrorMessage.classList.remove('hidden');
             pinEntryInput.value = '';
-        } else { // No PIN stored, allow access for now, but ideally prompt for PIN creation
-            pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
-            displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+        } else { // No PIN stored, prompt for creation
+            const newPin = prompt(`No PIN found for ${currentPinEntryPerson}. Please create a new PIN:`);
+            if (newPin) {
+                await setPin(currentPinEntryPerson, newPin);
+                pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
+                displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+            } else {
+                pinEntryErrorMessage.textContent = "PIN creation cancelled.";
+                pinEntryErrorMessage.classList.remove('hidden');
+                pinEntryInput.value = '';
+            }
         }
     });
 
