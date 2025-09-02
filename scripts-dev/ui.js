@@ -1,9 +1,10 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
-import { setCurrentPrayerDocId } from './firebase.js';
+import { setCurrentPrayerDocId, getPin } from './firebase.js';
 import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
 
 let allPrayers = [];
+let currentPinEntryPerson = null; // To store the name of the person for PIN entry
 
 export function updateTime() {
     const now = new Date();
@@ -63,7 +64,7 @@ export function renderVerseCarousel(insights) {
                 <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
                 <h5 class="font-semibold text-lg mb-2">Think About It</h5>
                 <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}
-/div>
+</div>
                 <h5 class="font-semibold text-lg mb-2">Prayer</h5>
                 <p class="text-base mb-4">${dev.prayer}</p>
             </div>
@@ -205,216 +206,6 @@ function closeAndResetFeelingsModal() {
 
 function getFamilyFeelings() {
     try {
-        return JSON.parse(localStorage.getItem('familyFeelings') || '{}');
-    } catch (e) { return {}; }
-}
-
-function saveFamilyFeelings(feelings) {
-    localStorage.setItem('familyFeelings', JSON.stringify(feelings));
-}
-
-let allPrayers = [];
-let currentPinEntryPerson = null; // To store the name of the person for PIN entry
-
-export function updateTime() {
-    const now = new Date();
-    const timeEl = document.getElementById('time');
-    const ampmEl = document.getElementById('ampm');
-    const dateEl = document.getElementById('date');
-    if (!timeEl || !dateEl || !ampmEl) return;
-    const hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    ampmEl.textContent = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12;
-    timeEl.textContent = `${formattedHours}:${minutes}`;
-    dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-}
-
-export async function updateStaticBackground(weatherDescription) {
-    const bodyElement = document.body;
-    const normalizedWeatherDescription = weatherDescription.toLowerCase();
-    const imageUrl = WEATHER_IMAGES[normalizedWeatherDescription] || WEATHER_IMAGES.default;
-    
-    const img = new Image();
-    img.src = imageUrl;
-    img.onload = () => {
-        bodyElement.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${imageUrl}')`;
-    };
-    img.onerror = () => {
-        bodyElement.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${WEATHER_IMAGES.default}')`;
-    };
-}
-
-export function updateVerseFromLocalList() { 
-    const today = new Date();
-    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    setCurrentVerse(NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length]);
-    
-    document.getElementById('verse-text').textContent = getCurrentVerse().text;
-    document.getElementById('verse-reference').textContent = getCurrentVerse().reference;
-    generateAndDisplayVerseInsights(getCurrentVerse());
-}
-
-export function renderVerseCarousel(insights) {
-    const track = document.getElementById('gemini-verse-insight-track');
-    const verseWidget = document.getElementById('verse');
-    const indicator = document.getElementById('verse-click-indicator');
-    if (!track) return;
-    track.innerHTML = ''; 
-
-    setVerseInsights([]);
-    
-    if (insights?.devotional) {
-        const dev = insights.devotional;
-        let devotionalContent = `
-            <div class="p-4 text-left">
-                <h5 class="font-semibold text-lg mb-2">${dev.title}</h5>
-                <p class="text-base mb-4">${dev.story}</p>
-                <h5 class="font-semibold text-lg mb-2">The Big Idea</h5>
-                <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
-                <h5 class="font-semibold text-lg mb-2">Think About It</h5>
-                
-                <h5 class="font-semibold text-lg mb-2">Prayer</h5>
-                <p class="text-base mb-4">${dev.prayer}</p>
-            </div>
-        `;
-        setVerseInsights([...getVerseInsights(), { title: 'Devotional', content: devotionalContent }]);
-    }
-
-    if (insights?.context) {
-        let contextContent = `
-            <div class="p-4 text-left">
-                <h5 class="font-semibold text-lg mb-2">What was happening?</h5>
-                <p class="text-base">${insights.context}</p>
-            </div>
-        `;
-        setVerseInsights([...getVerseInsights(), { title: 'Context', content: contextContent }]);
-    }
-
-    getVerseInsights().forEach(insight => {
-        const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
-        slide.innerHTML = `<div class="scrollable-content h-full w-full">${insight.content}</div>`;
-        track.appendChild(slide);
-    });
-    
-    showVerseInsight(0);
-    const prevBtn = document.getElementById('prev-verse-insight');
-    const nextBtn = document.getElementById('next-verse-insight');
-    if (getVerseInsights().length > 1) {
-        prevBtn.classList.remove('hidden');
-        nextBtn.classList.remove('hidden');
-    } else {
-        prevBtn.classList.add('hidden');
-        nextBtn.classList.add('hidden');
-    }
-
-    // Show indicator and make widget clickable
-    if (indicator) indicator.classList.remove('hidden');
-    if (verseWidget) verseWidget.classList.add('clickable');
-    lucide.createIcons();
-}
-
-export function showVerseInsight(index) {
-    const track = document.getElementById('gemini-verse-insight-track');
-    const prevButton = document.getElementById('prev-verse-insight');
-    const nextButton = document.getElementById('next-verse-insight');
-    if (!track || !prevButton || !nextButton || !getVerseInsights() || getVerseInsights().length === 0) return;
-    if (index < 0 || index >= getVerseInsights().length) return;
-    
-    setCurrentVerseInsightIndex(index);
-    track.style.transform = `translateX(-${getCurrentVerseInsightIndex() * 100}%)`;
-    prevButton.disabled = getCurrentVerseInsightIndex() === 0;
-    nextButton.disabled = getCurrentVerseInsightIndex() >= getVerseInsights().length - 1;
-}
-
-export function renderActivityCarousel() {
-    const insightTrack = document.getElementById('gemini-weather-insight-track');
-    if (!insightTrack) return;
-
-    insightTrack.innerHTML = ''; 
-    getActivityIdeas().forEach(idea => {
-        const slide = document.createElement('div');
-        slide.className = 'carousel-slide flex flex-col items-center justify-center text-center'; 
-        slide.innerHTML = `
-            <h4 class="font-bold text-lg">${idea.title}</h4>
-            <div class="scrollable-content" style="max-height: 150px; overflow-y: auto;">
-                <p class="text-sm mt-1">${idea.description}</p>
-            </div>
-        `;
-        insightTrack.appendChild(slide);
-    });
-
-    if (getActivityIdeas().length > 1) {
-        document.getElementById('prev-idea').classList.remove('hidden');
-        document.getElementById('next-idea').classList.remove('hidden');
-        document.getElementById('idea-counter').classList.remove('hidden');
-    }
-    document.getElementById('refresh-ideas').classList.remove('hidden');
-    showActivityIdea(0);
-}
-
-export function showActivityIdea(index) {
-    const track = document.getElementById('gemini-weather-insight-track');
-    const counter = document.getElementById('idea-counter');
-    const prevButton = document.getElementById('prev-idea');
-    const nextButton = document.getElementById('next-idea'); 
-    if (!track || !counter || !prevButton || !nextButton || !getActivityIdeas() || getActivityIdeas().length === 0) return; 
-    if (index < 0 || index >= getActivityIdeas().length) return;
-    setCurrentIdeaIndex(index);
-    track.style.transform = `translateX(-${getCurrentIdeaIndex() * 100}%)`;
-    counter.textContent = `${getCurrentIdeaIndex() + 1} / ${getActivityIdeas().length}`;
-    prevButton.disabled = getCurrentVerseInsightIndex() === 0;
-    nextButton.disabled = getCurrentVerseInsightIndex() >= getVerseInsights().length - 1;
-}
-
-export function renderChatHistory() {
-    const answerContainer = document.getElementById('gemini-answer-container');
-    answerContainer.innerHTML = '';
-    getGeminiChatHistory().forEach(message => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${message.role === 'user' ? 'user-message' : 'model-message'}`;
-        messageDiv.innerHTML = `<p>${message.parts[0].text.replace(/\n/g, '<br>')}</p>`;
-        answerContainer.appendChild(messageDiv);
-    });
-    const lastMessage = answerContainer.lastElementChild;
-    if (lastMessage) {
-        lastMessage.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-}
-
-export function initializeFeelingsWheel() {
-    const modalOverlay = document.getElementById('feelings-modal-overlay');
-    const openBtn = document.getElementById('mood-tracker-btn');
-    const closeBtn = document.getElementById('close-feelings-modal');
-    
-    openBtn.addEventListener('click', () => {
-        showNameSelection();
-        modalOverlay.style.display = 'flex';
-        lucide.createIcons();
-    });
-
-    closeBtn.addEventListener('click', closeAndResetFeelingsModal);
-    
-    modalOverlay.addEventListener('click', (event) => {
-        if(event.target === modalOverlay) {
-            closeAndResetFeelingsModal();
-        }
-    });
-
-    updateOverallMoodIcon();
-}
-
-function closeAndResetFeelingsModal() {
-    const modalOverlay = document.getElementById('feelings-modal-overlay');
-    modalOverlay.style.display = 'none';
-    // Reset the view to name selection for the next time it opens
-    document.getElementById('wheel-view').classList.add('hidden');
-    document.getElementById('name-selection-view').classList.remove('hidden');
-};
-
-function getFamilyFeelings() {
-    try { 
         return JSON.parse(localStorage.getItem('familyFeelings') || '{}');
     } catch (e) { return {}; }
 }
