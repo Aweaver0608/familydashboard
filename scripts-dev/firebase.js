@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { FAMILY_MEMBERS } from '../config.js';
 import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 
@@ -184,6 +184,32 @@ export async function handleUpdateAnswer() {
 
 export function setCurrentPrayerDocId(id) {
     currentPrayerDocId = id;
+}
+
+export async function getPin(name) {
+    try {
+        const pinDocRef = doc(db, "pins", name);
+        const docSnap = await getDoc(pinDocRef);
+        if (docSnap.exists()) {
+            return docSnap.data().pin;
+        } else {
+            console.log(`No PIN found for ${name}`);
+            return null;
+        }
+    } catch (e) {
+        console.error("Error getting PIN:", e);
+        return null;
+    }
+}
+
+export async function setPin(name, pin) {
+    try {
+        const pinDocRef = doc(db, "pins", name);
+        await setDoc(pinDocRef, { pin: pin });
+        console.log(`PIN set for ${name}`);
+    } catch (e) {
+        console.error("Error setting PIN:", e);
+    }
 }
 
 export async function addDailyChallengeEntry(data) {

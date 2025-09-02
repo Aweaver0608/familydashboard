@@ -1,4 +1,4 @@
-import { addDailyChallengeEntry } from './firebase.js';
+import { addDailyChallengeEntry, getPin, setPin } from './firebase.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const dailyChallengeBtn = document.getElementById('daily-challenge-btn');
@@ -262,23 +262,100 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
-    function handlePinSubmission() {
+    async function handlePinSubmission() {
         const pinInput = document.getElementById('daily-challenge-pin-input');
         const errorMessage = document.getElementById('pin-error-message');
         const enteredPin = pinInput.value;
+        const selectedPerson = getSelectedPersonForMood(); // Assuming this function exists and returns the selected person's name
 
-        const CORRECT_PIN = "1234"; // Placeholder PIN
+        if (!selectedPerson) {
+            errorMessage.textContent = "Please select a person first.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
 
-        if (enteredPin === CORRECT_PIN) {
+        const storedPin = await getPin(selectedPerson);
+
+        if (storedPin && enteredPin === storedPin) {
             errorMessage.classList.add('hidden');
             console.log("PIN correct. Proceeding to next step.");
             currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP;
             updateDailyChallengeDialog();
-        } else {
+        } else if (storedPin && enteredPin !== storedPin) {
             errorMessage.textContent = "Incorrect PIN. Please try again.";
             errorMessage.classList.remove('hidden');
             pinInput.value = '';
+        } else { // No PIN stored, this case should ideally be handled by updateDailyChallengeDialog
+            errorMessage.textContent = "No PIN found for this user. Please create one.";
+            errorMessage.classList.remove('hidden');
+            // This scenario should ideally lead to the PIN creation UI
         }
+    }
+
+    async function handlePinCreation() {
+        const newPinInput = document.getElementById('new-pin-input');
+        const confirmPinInput = document.getElementById('confirm-pin-input');
+        const errorMessage = document.getElementById('pin-creation-error-message');
+        const newPin = newPinInput.value;
+        const confirmPin = confirmPinInput.value;
+        const selectedPerson = getSelectedPersonForMood();
+
+        if (!selectedPerson) {
+            errorMessage.textContent = "Error: No person selected.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        if (newPin.length < 4) {
+            errorMessage.textContent = "PIN must be at least 4 characters long.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            errorMessage.textContent = "PINs do not match.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        await setPin(selectedPerson, newPin);
+        errorMessage.classList.add('hidden');
+        alert("PIN created successfully!");
+        currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP; // Proceed to next step
+        updateDailyChallengeDialog();
+    }
+
+    async function handlePinCreation() {
+        const newPinInput = document.getElementById('new-pin-input');
+        const confirmPinInput = document.getElementById('confirm-pin-input');
+        const errorMessage = document.getElementById('pin-creation-error-message');
+        const newPin = newPinInput.value;
+        const confirmPin = confirmPinInput.value;
+        const selectedPerson = getSelectedPersonForMood();
+
+        if (!selectedPerson) {
+            errorMessage.textContent = "Error: No person selected.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        if (newPin.length < 4) {
+            errorMessage.textContent = "PIN must be at least 4 characters long.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            errorMessage.textContent = "PINs do not match.";
+            errorMessage.classList.remove('hidden');
+            return;
+        }
+
+        await setPin(selectedPerson, newPin);
+        errorMessage.classList.add('hidden');
+        alert("PIN created successfully!");
+        currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP; // Proceed to next step
+        updateDailyChallengeDialog();
     }
 
     function startDailyChallenge() {
