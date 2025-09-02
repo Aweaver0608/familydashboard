@@ -207,7 +207,7 @@ export function displayWordOfTheDay(wordData) {
     if (wordRelatedWords) wordRelatedWords.innerHTML = relatedWordsHtml;
 }
 
-export function initializeWordOfTheDay() {
+export async function initializeWordOfTheDay() {
     const wordOfTheDayBtn = document.getElementById('word-of-the-day-btn');
     const modalOverlay = document.getElementById('word-of-the-day-modal-overlay');
     const closeModalBtn = document.getElementById('close-word-of-the-day-modal');
