@@ -273,8 +273,7 @@ export function renderVerseCarousel(insights) {
                 <h5 class="font-semibold text-lg mb-2">The Big Idea</h5>
                 <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
                 <h5 class="font-semibold text-lg mb-2">Think About It</h5>
-                <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}
-</div>
+                
                 <h5 class="font-semibold text-lg mb-2">Prayer</h5>
                 <p class="text-base mb-4">${dev.prayer}</p>
             </div>
