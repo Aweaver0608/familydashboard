@@ -289,11 +289,8 @@ async function showPinEntryForFeelingSelection(personName) {
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
 
-    // Ensure no duplicate listeners by removing any existing one before adding
-    submitPinEntryBtn.removeEventListener('click', window.handlePinSubmit); // Remove previous listener if it exists
-
-    // Define the event handler function
-    window.handlePinSubmit = async () => { // Attach to window for easy removal if needed, or define within scope
+    // Define the event handler function directly within this scope
+    const handlePinSubmit = async () => {
         const enteredPin = pinEntryInput.value;
 
         if (isCreateMode) {
@@ -326,8 +323,10 @@ async function showPinEntryForFeelingSelection(personName) {
         }
     };
 
+    // Remove any existing listener before adding the new one
+    submitPinEntryBtn.removeEventListener('click', handlePinSubmit);
     // Attach the new listener
-    submitPinEntryBtn.addEventListener('click', window.handlePinSubmit);
+    submitPinEntryBtn.addEventListener('click', handlePinSubmit);
 
     closePinEntryModalBtn.addEventListener('click', () => {
         pinEntryModalOverlay.style.display = 'none';
