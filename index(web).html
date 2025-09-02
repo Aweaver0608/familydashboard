@@ -1,0 +1,366 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Family Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Performance Improvement: Preconnect to external domains -->
+    <link rel="preconnect" href="https://api.weather.gov" crossorigin>
+    <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body class="bg-black text-white">
+
+    <div id="quote-banner">
+        <div id="quote-content">
+            <p id="quote-text"></p>
+            <p id="quote-author"></p>
+        </div>
+    </div>
+
+    <div id="background-overlay"></div>
+
+    <div id="dashboard-grid" class="p-6">
+        
+        <div class="flex flex-col gap-6 min-h-0 main-left-column">
+            <!-- Time and Date -->
+            <div id="time-date" class="flex items-end justify-between flex-shrink-0">
+                <div class="flex items-baseline gap-3">
+                    <h2 id="date" class="text-3xl font-medium text-shadow"></h2>
+                    <h1 id="time" class="text-6xl font-bold text-shadow -mb-2"></h1>
+                    <span id="ampm" class="text-3xl font-semibold text-shadow -mb-2"></span>
+                </div>
+                <button id="refresh-calendar" class="square-glass-btn">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Refresh Calendar
+                </button>
+            </div>
+
+            <!-- Calendar -->
+            <div id="calendar" class="widget flex flex-col p-0 overflow-hidden">
+                <iframe id="calendar-iframe" src="https://calendar.google.com/calendar/embed?src=wksest2015%40gmail.com&ctz=America%2FNew_York&mode=AGENDA" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+
+            <!-- Conversation Starter Widget -->
+            <div id="conversation-starter" class="widget flex flex-col">
+                <div>
+                    <h3 class="text-lg font-semibold text-white/80 mb-2">Conversation Starter ✨</h3>
+                    <p id="starter-question" class="text-xl text-center font-medium leading-snug">Loading question...</p>
+                </div>
+                <button id="refresh-starter" class="square-glass-btn self-center mt-4">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> New Question
+                </button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-6 min-h-0 main-right-column">
+            <!-- Weather -->
+            <div id="weather" class="widget flex flex-col">
+                <div id="weather-loading" class="flex-grow flex items-center justify-center text-2xl text-shadow">Loading weather...</div>
+                <div id="weather-content" class="hidden">
+                    <!-- Top Section: Current Conditions -->
+                    <div class="flex-shrink-0">
+                        <div id="current-conditions-grid">
+                            <div id="weather-details" class="text-shadow">
+                                <div>High: <span id="temp-high"></span></div>
+                                <div>Low: <span id="temp-low"></span></div>
+                                <div>Feels like: <span id="feels-like"></span></div>
+                                <div>Humidity: <span id="humidity"></span></div>
+                            </div>
+                            <div id="weather-main" class="text-shadow">
+                                <p id="weather-temp"></p>
+                                <p id="weather-description"></p>
+                            </div>
+                            <div id="weather-icon-container" class="text-shadow">
+                                <img id="weather-icon" src="" alt="Current weather icon">
+                                <div id="chance-of-rain-container">
+                                    <img src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
+                                    <span id="chance-of-rain"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sunrise/Sunset Removed as it's not easily available from NWS API -->
+                    </div>
+
+                    <!-- Middle Section: Forecasts -->
+                    <div class="flex-shrink-0">
+                        <div id="hourly-forecast" class="forecast-row"></div>
+                        <div id="weather-forecast" class="forecast-row"></div>
+                    </div>
+
+                    <!-- Bottom Section: Gemini Activity Suggestions -->
+                    <div id="activity-suggestions-container">
+                        <div class="carousel-container">
+                            <div id="gemini-weather-insight-track" class="carousel-track">
+                                <div class="carousel-slide">
+                                    <div class="flex items-center justify-center w-full">
+                                        <span class="text-lg">✨ Loading personalized activity ideas...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="prev-idea" class="carousel-button left hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                            <button id="next-idea" class="carousel-button right hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                        </div>
+                        <div id="carousel-controls" class="absolute top-0 left-0 flex items-center gap-2">
+                            <span id="idea-counter" class="text-xs bg-black/40 px-2 py-1 rounded-md hidden"></span>
+                            <button id="refresh-ideas" class="p-1 bg-black/40 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verse of the Day -->
+            <div id="verse" class="widget flex flex-col min-h-0">
+                 <div class="flex-grow flex flex-col justify-center">
+                    <blockquote id="verse-text" class="text-2xl italic text-shadow text-center">Loading verse...</blockquote>
+                    <cite id="verse-reference" class="block text-right text-lg mt-4 font-medium text-shadow"></cite>
+                </div>
+                <div id="verse-click-indicator" class="text-center text-xs text-white/50 mt-2 flex-shrink-0 flex items-center justify-center gap-1 hidden">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Click for devotional and scripture context</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Action Buttons -->
+    <!--<button id="open-gemini-modal" class="glass-btn">
+        <i data-lucide="sparkles" class="w-6 h-6"></i>
+        <span>Ask Gemini</span>
+    </button>-->
+<button id="open-gemini-modal" class="square-glass-btn">
+    <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65 65" class="w-6 h-6">
+        <mask id="maskme" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="65" height="65"><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="#000"/><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="url(#prefix__paint0_linear_2001_67)"/></mask><g mask="url(#maskme)"><g filter="url(#prefix__filter0_f_2001_67)"><path d="M-5.859 50.734c7.498 2.663 16.116-2.33 19.249-11.152 3.133-8.821-.406-18.131-7.904-20.794-7.498-2.663-16.116 2.33-19.25 11.151-3.132 8.822.407 18.132 7.905 20.795z" fill="#FFE432"/></g><g filter="url(#prefix__filter1_f_2001_67)"><path d="M27.433 21.234c7.498 2.663 16.116-2.33 19.25-11.152 3.132-8.821-.407-18.131-7.905-20.794-7.498-2.663-16.116 2.33-19.249 11.151-3.133 8.822.406 18.132 7.904 20.795z" fill="#34A853"/></g><g filter="url(#prefix__filter2_f_2001_67)"><path d="M69.263 30.12c-2.663-7.498-11.15-12.49-20.794-12.49-9.643 0-18.13 4.992-20.794 12.49l-2.89 8.12c-2.663 7.498 2.33 16.116 12.49 19.25 10.16 3.132 19.47-.407 22.133-7.905l9.855-27.688z" fill="#4285F4"/></g><g filter="url(#prefix__filter3_f_2001_67)"><path d="M42.153 69.263c-7.498-2.663-12.49-11.15-12.49-20.794s4.992-18.13 12.49-20.794l8.12-2.89c7.498-2.663 16.116 2.33 19.25 11.152 3.132 8.821-.407 18.131-7.905 20.794-7.498 2.663-16.116-2.33-19.25-11.152z" fill="#EA4335"/></g></g><defs><filter id="prefix__filter0_f_2001_67" x="-22.859" y=".938" width="58.242" height="58.242" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter1_f_2001_67" x="-1.567" y="-18.766" width="58.242" height="58.242" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter2_f_2001_67" x="15.579" y="7.629" width="63.539" height="63.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter3_f_2001_67" x="19.663" y="15.579" width="63.539" height="63.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><linearGradient id="prefix__paint0_linear_2001_67" x1="32.5" y1="0" x2="32.5" y2="65" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+    </svg>
+    <span>Ask Gemini</span>
+</button>
+
+<button id="open-prayer-modal" class="square-glass-btn">
+    <span class="text-2xl">🙏🏼</span>
+    <span>Prayer Requests</span>
+</button>
+
+    <!-- Mood Tracker Button -->
+    <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <i id="overall-mood-icon" data-lucide="smile" class="w-16 h-16"></i>
+    </button>
+
+    <!-- Word of the Day Button -->
+    <button id="word-of-the-day-btn" class="square-glass-btn p-4 fixed bottom-6 z-50 hidden" style="right: calc(50% + 72px);">
+        <span id="word-of-the-day-text" class="text-2xl"></span>
+    </button>
+
+    <!-- Gemini Q&A Modal -->
+    <div id="gemini-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="gemini-chat-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold">Ask a Question!</h2>
+                <button id="close-gemini-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="gemini-answer-container" class="scrollable-content">
+                    <!-- Chat messages will be appended here -->
+                </div>
+                <div id="gemini-input-area">
+                    <textarea id="gemini-question-input" rows="1" placeholder="Ask anything..."></textarea>
+                    <button id="submit-gemini-question" class="gemini-btn">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verse Devotional Modal -->
+    <div id="verse-devotional-modal-overlay" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold">Verse Insights</h2>
+                <button id="close-verse-devotional-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="carousel-container h-full">
+                     <div id="gemini-verse-insight-track" class="carousel-track">
+                         <!-- Content will be injected by JS -->
+                     </div>
+                     <button id="prev-verse-insight" class="carousel-button left hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                     <button id="next-verse-insight" class="carousel-button right hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feelings Wheel Modal -->
+    <div id="feelings-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="feelings-modal" class="modal-content">
+             <div class="modal-header flex justify-between items-center">
+                <h2 id="feelings-modal-title" class="text-xl font-bold">How are you feeling?</h2>
+                <button id="close-feelings-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <div id="name-selection-view"></div>
+                <div id="wheel-view" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feeling Insight Modal -->
+    <div id="feeling-insight-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="feeling-insight-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 id="feeling-insight-title" class="text-xl font-bold">Understanding Your Feeling</h2>
+                <button id="close-feeling-insight-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="feeling-insight-body" class="modal-body scrollable-content">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Search Help Modal -->
+    <div id="smart-search-help-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="smart-search-help-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold">Smart Search Guide</h2>
+                <button id="close-smart-search-help-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <p class="mb-4">Smart Search allows you to use a powerful query syntax to find specific prayer requests. Here’s how it works:</p>
+                <ul class="list-disc list-inside space-y-3 mb-4">
+                    <li><strong>Keywords:</strong> Just type a word. <code class="bg-black/20 px-1.5 py-1 rounded">school</code></li>
+                    <li><strong>AND Logic:</strong> Use spaces or <code class="bg-black/20 px-1.5 py-1 rounded">AND</code> for words that must appear. <code class="bg-black/20 px-1.5 py-1 rounded">Andrew AND Dad</code></li>
+                    <li><strong>OR Logic:</strong> Use <code class="bg-black/20 px-1.5 py-1 rounded">OR</code> for at least one of the words. <code class="bg-black/20 px-1.5 py-1 rounded">Dad OR Mom</code></li>
+                    <li><strong>Field Search:</strong> Search a specific field with <code class="bg-black/20 px-1.5 py-1 rounded">key:value</code>. <code class="bg-black/20 px-1.5 py-1 rounded">name:Andrew</code></li>
+                    <li><strong>Grouping:</strong> Use parentheses <code class="bg-black/20 px-1.5 py-1 rounded">()</code> to group terms. <code class="bg-black/20 px-1.5 py-1 rounded">name:Andrew AND (Dad OR Grandpa)</code></li>
+                    <li><strong>Exact Phrase:</strong> Use double quotes <code class="bg-black/20 px-1.5 py-1 rounded">""</code> for exact phrases. <code class="bg-black/20 px-1.5 py-1 rounded">"sick at home"</code></li>
+                </ul>
+                <p>This syntax provides a flexible way to construct highly specific queries.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Word of the Day Modal -->
+    <div id="word-of-the-day-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="word-of-the-day-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 class="text-xl font-bold" id="word-of-the-day-title"></h2>
+                <button id="close-word-of-the-day-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <p class="text-white/70 italic text-sm mb-2" id="word-of-the-day-phonetic"></p>
+                
+
+                <div id="word-of-the-day-definitions" class="word-section"></div>
+                <div id="word-of-the-day-examples" class="word-section"></div>
+                <div id="word-of-the-day-did-you-know" class="word-section"></div>
+                <div id="word-of-the-day-etymology" class="word-section"></div>
+                <div id="word-of-the-day-related-words" class="word-section"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prayer Request Modal -->
+    <div id="prayer-modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="prayer-modal" class="modal-content">
+            <div class="modal-header flex justify-between items-center">
+                <h2 id="prayer-modal-title" class="text-xl font-bold">Family Prayer Requests</h2>
+                <button id="close-prayer-modal" class="p-1 rounded-full hover:bg-white/10">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="modal-body scrollable-content">
+                <!-- Main View: Lists of prayers -->
+                <div id="prayer-list-view">
+                    <div class="mb-4 flex items-center gap-2">
+                        <input type="text" id="prayer-search-input" class="form-input w-full" placeholder="Search by name or keyword...">
+                        <button id="open-smart-search-help-btn" class="glass-btn p-2">
+                            <i data-lucide="info" class="w-5 h-5"></i>
+                        </button>
+                        <div class="relative inline-block text-left">
+                            <button type="button" id="search-operator-btn" class="glass-btn p-2">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                            <div id="search-operator-dropdown" class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="search-operator-btn">
+                                <div class="py-1" role="none">
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator=" AND ">AND</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator=" OR ">OR</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="()">() (parentheses)</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="&quot;&quot;">"" (quotes)</a>
+                                </div>
+                                <div class="py-1 border-t border-gray-700" role="none">
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="name:">name:</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="request:">request:</a>
+                                    <a href="#" class="text-white block px-4 py-2 text-sm" role="menuitem" data-operator="answer:">answer:</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-white/70 italic text-sm">Click on a prayer request to edit it.</p>
+                    <h3 class="text-lg font-semibold mb-2">Current Requests</h3>
+                    <div id="current-requests-list"><p class="text-white/50">Loading requests...</p></div>
+                    <h3 class="text-lg font-semibold mt-6 mb-2">Answered Prayers</h3>
+                    <div id="answered-prayers-list"><p class="text-white/50">No answered prayers yet.</p></div>
+                </div>
+                <!-- Add New Request Form -->
+                <div id="add-prayer-form-view" class="hidden">
+                    <h3 class="text-lg font-semibold mb-4">Add a New Prayer Request</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="prayer-requester-name" class="block mb-1 text-sm font-medium">Your Name</label>
+                            <select id="prayer-requester-name" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="prayer-request-text" class="block mb-1 text-sm font-medium">Prayer Request</label>
+                            <textarea id="prayer-request-text" rows="4" class="form-input" placeholder="What can we pray for?"></textarea>
+                        </div>
+                    </div>
+                </div>
+                 <!-- Add Answer Form -->
+                <div id="answer-prayer-form-view" class="hidden">
+                     <h3 class="text-lg font-semibold mb-4">How was this prayer answered?</h3>
+                     <div class="space-y-4">
+                         <p class="prayer-request-body bg-black/20 p-3 rounded-lg" id="original-request-for-answer"></p>
+                         <input type="hidden" id="edit-prayer-id">
+                         <div>
+                             <label for="prayer-answer-text" class="block mb-1 text-sm font-medium">Answer to Prayer</label>
+                             <textarea id="prayer-answer-text" rows="4" class="form-input" placeholder="Describe how God answered this prayer..."></textarea>
+                         </div>
+                     </div>
+                </div>
+            </div>
+            <div class="modal-footer flex justify-end gap-3">
+                <button id="cancel-prayer-request-btn" class="gemini-btn bg-gray-500 hover:bg-gray-600 hidden">Cancel</button>
+                <button id="submit-prayer-request-btn" class="gemini-btn hidden">Submit Request</button>
+                <button id="update-prayer-request-btn" class="gemini-btn hidden">Update Request</button>
+                <button id="submit-prayer-answer-btn" class="gemini-btn hidden">Submit Answer</button>
+                <button id="update-prayer-answer-btn" class="gemini-btn hidden">Update Answer</button>
+                <button id="add-new-prayer-request-btn" class="gemini-btn">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Add New
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
