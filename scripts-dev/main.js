@@ -228,10 +228,7 @@ async function fetchWeather() {
     try {
         // Step 1: Fetch the grid endpoints from the points URL
         const pointsResponse = await fetch(pointsUrl, { headers });
-        if (!pointsResponse.ok) {
-            console.error(`NWS points lookup failed: ${pointsResponse.status} ${pointsResponse.statusText}`);
-            throw new Error(`NWS points lookup failed: ${pointsResponse.status} ${pointsResponse.statusText}`);
-        }
+        if (!pointsResponse.ok) throw new Error(`NWS points lookup failed: ${pointsResponse.status}`);
         const pointsData = await pointsResponse.json();
         
         const forecastUrl = pointsData.properties.forecast;
@@ -243,14 +240,8 @@ async function fetchWeather() {
             fetch(hourlyForecastUrl, { headers })
         ]);
 
-        if (!forecastResponse.ok) {
-            console.error(`NWS forecast fetch failed: ${forecastResponse.status} ${forecastResponse.statusText}`);
-            throw new Error(`NWS forecast fetch failed: ${forecastResponse.status} ${forecastResponse.statusText}`);
-        }
-        if (!hourlyForecastResponse.ok) {
-            console.error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status} ${hourlyForecastResponse.statusText}`);
-            throw new Error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status} ${hourlyForecastResponse.statusText}`);
-        }
+        if (!forecastResponse.ok) throw new Error(`NWS forecast fetch failed: ${forecastResponse.status}`);
+        if (!hourlyForecastResponse.ok) throw new Error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status}`);
 
         const forecastData = await forecastResponse.json();
         const hourlyData = await hourlyForecastResponse.json();
@@ -379,7 +370,7 @@ async function fetchWeather() {
         }
 
     } catch (error) {
-        console.error('Error fetching NWS weather data:', error.message, error);
+        console.error('Error fetching NWS weather data:', error);
         document.getElementById('weather-loading').textContent = 'Weather Unavailable';
     }
 }
