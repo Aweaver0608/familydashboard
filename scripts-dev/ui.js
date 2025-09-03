@@ -415,7 +415,7 @@ function displayFeelingsWheelContent(name) {
 }
 
 
-async function handleFeelingSelection(event) {
+async function handleFeelingSelection(event) { // Ensure this function is async
     const { core, feeling } = event.currentTarget.dataset;
     const familyFeelings = getFamilyFeelings();
 
@@ -427,10 +427,11 @@ async function handleFeelingSelection(event) {
     saveFamilyFeelings(familyFeelings);
     
     updateOverallMoodIcon();
-    closeAndResetFeelingsModal(); 
-    // We want to show the new modal and close the old one concurrently.
-    showFeelingResponse(feeling, core);
-
+    
+    // First, show the new insight modal and WAIT for it to complete.
+    await showFeelingResponse(feeling, core);
+    // THEN, close the original feelings wheel modal.
+    closeAndResetFeelingsModal();
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
         detail: { feeling, core }
