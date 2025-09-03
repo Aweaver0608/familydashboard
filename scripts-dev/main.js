@@ -10,7 +10,13 @@ import { WEATHER_CITY_DETAILS, FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, N
 
 // --- Global State Variables ---
 let currentVerse = {};
-let rawWeatherData = null;
+let rawWeatherData = {
+    current: null,
+    forecast: null,
+    fullPoints: null, // To store raw points data
+    fullForecast: null, // To store raw forecast data
+    fullHourly: null,   // To store raw hourly data
+};
 let activityIdeas = [];
 let verseInsights = [];
 let currentIdeaIndex = 0;
@@ -228,11 +234,21 @@ async function fetchWeather() {
     try {
         // Step 1: Fetch the grid endpoints from the points URL
         const pointsResponse = await fetch(pointsUrl, { headers });
-        if (!pointsResponse.ok) {
+        let pointsData;
+        if (pointsResponse.status === 200) {
+            pointsData = await pointsResponse.json();
+        } else if (pointsResponse.status === 304) {
+            console.log('NWS points data not modified (304). Using existing data.');
+            if (rawWeatherData.fullPoints) {
+                pointsData = rawWeatherData.fullPoints;
+            } else {
+                console.warn('Received 304 for points but no existing data. Cannot proceed.');
+                return; // Exit fetchWeather
+            }
+        } else {
             console.error(`NWS points lookup failed: ${pointsResponse.status} ${pointsResponse.statusText}`);
             throw new Error(`NWS points lookup failed: ${pointsResponse.status} ${pointsResponse.statusText}`);
         }
-        const pointsData = await pointsResponse.json();
         
         const forecastUrl = pointsData.properties.forecast;
         const hourlyForecastUrl = pointsData.properties.forecastHourly;
@@ -243,17 +259,37 @@ async function fetchWeather() {
             fetch(hourlyForecastUrl, { headers })
         ]);
 
-        if (!forecastResponse.ok) {
+        let forecastData;
+        if (forecastResponse.status === 200) {
+            forecastData = await forecastResponse.json();
+        } else if (forecastResponse.status === 304) {
+            console.log('NWS forecast data not modified (304). Using existing data.');
+            if (rawWeatherData.fullForecast) {
+                forecastData = rawWeatherData.fullForecast;
+            } else {
+                console.warn('Received 304 for forecast but no existing data. Cannot proceed.');
+                return; // Exit fetchWeather
+            }
+        } else {
             console.error(`NWS forecast fetch failed: ${forecastResponse.status} ${forecastResponse.statusText}`);
             throw new Error(`NWS forecast fetch failed: ${forecastResponse.status} ${forecastResponse.statusText}`);
         }
-        if (!hourlyForecastResponse.ok) {
+
+        let hourlyData;
+        if (hourlyForecastResponse.status === 200) {
+            hourlyData = await hourlyForecastResponse.json();
+        } else if (hourlyForecastResponse.status === 304) {
+            console.log('NWS hourly forecast data not modified (304). Using existing data.');
+            if (rawWeatherData.fullHourly) {
+                hourlyData = rawWeatherData.fullHourly;
+            } else {
+                console.warn('Received 304 for hourly but no existing data. Cannot proceed.');
+                return; // Exit fetchWeather
+            }
+        } else {
             console.error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status} ${hourlyForecastResponse.statusText}`);
             throw new Error(`NWS hourly forecast fetch failed: ${hourlyForecastResponse.status} ${hourlyForecastResponse.statusText}`);
         }
-
-        const forecastData = await forecastResponse.json();
-        const hourlyData = await hourlyForecastResponse.json();
 
         // Step 3: Process and display the data
         const dailyPeriods = forecastData.properties.periods;
@@ -360,8 +396,131 @@ async function fetchWeather() {
         });
 
 
+        // Current conditions from the first hourly period
+        const currentConditions = hourlyPeriods[0];
+        document.getElementById('weather-temp').textContent = `${currentConditions.temperature}°`;
+        document.getElementById('weather-description').textContent = currentConditions.shortForecast;
+        document.getElementById('humidity').textContent = `${currentConditions.relativeHumidity.value}%`;
+        // NWS doesn't provide a "feels like" temp, so we'll use the actual temp
+        document.getElementById('feels-like').textContent = `${currentConditions.temperature}°`;
+
+        // High/Low from the first daily period
+        const todayForecast = dailyPeriods[0];
+        document.getElementById('temp-high').textContent = `${todayForecast.temperature}°`;
+        // Find the next period that is a "night" period for the low
+        const tonightForecast = dailyPeriods.find(p => p.isDaytime === false);
+        if(tonightForecast) {
+            document.getElementById('temp-low').textContent = `${tonightForecast.temperature}°`;
+        }
+        
+        // Set main icon
+        document.getElementById('weather-icon').src = getWeatherIcon(todayForecast.shortForecast, todayForecast.isDaytime);
+        updateStaticBackground(todayForecast.shortForecast);
+
+        // Chance of rain
+        const chanceOfRain = todayForecast.probabilityOfPrecipitation.value || 0;
+        document.getElementById('chance-of-rain').textContent = `${chanceOfRain}%`;
+
+        // Hourly forecast: start with the next upcoming hour
+        const hourlyForecastContainer = document.getElementById('hourly-forecast');
+        hourlyForecastContainer.innerHTML = '';
+        const now = new Date();
+        // Find the first hour that is after now
+        const nextHours = hourlyPeriods.filter(h => new Date(h.startTime) > now).slice(0, 12);
+        nextHours.forEach(hour => {
+            const hourWrapper = document.createElement('div');
+            hourWrapper.className = 'forecast-item';
+            hourWrapper.innerHTML = `
+                <p class="font-semibold" style="margin-bottom:-0.75rem;">${new Date(hour.startTime).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }).replace(' ', '')}</p>
+                <div class="flex flex-col items-center justify-center">
+                    <img class="w-12 h-12 my-1" src="${getWeatherIcon(hour.shortForecast, hour.isDaytime)}" alt="Hourly forecast icon">
+                    <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${hour.temperature}°</span>
+                </div>
+                <div class="flex items-center gap-0.5 text-xs">
+                    <img src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
+                    <span>${hour.probabilityOfPrecipitation.value || 0}%</span>
+                </div>`;
+            hourlyForecastContainer.appendChild(hourWrapper);
+        });
+
+        // Daily forecast
+        const forecastContainerEl = document.getElementById('weather-forecast');
+        forecastContainerEl.innerHTML = '';
+        const uniqueDays = {};
+        dailyPeriods.forEach(period => {
+            const dayName = new Date(period.startTime).toLocaleDateString('en-US', { weekday: 'short' });
+            if (!uniqueDays[dayName]) {
+                uniqueDays[dayName] = { high: -Infinity, low: Infinity, pop: 0, icon: '', isDaytime: true };
+            }
+            // Always set the icon to a daytime version
+            uniqueDays[dayName].icon = getWeatherIcon(period.shortForecast, true); // Always true for daytime icon
+
+            if (period.isDaytime) {
+                uniqueDays[dayName].high = Math.max(uniqueDays[dayName].high, period.temperature);
+            } else {
+                uniqueDays[dayName].low = Math.min(uniqueDays[dayName].low, period.temperature);
+            }
+            uniqueDays[dayName].pop = Math.max(uniqueDays[dayName].pop, period.probabilityOfPrecipitation.value || 0);
+        });
+        
+        // Calculate average high-low difference from previous days
+        const forecastDays = Object.entries(uniqueDays).slice(1, 8);
+        let diffs = [];
+        forecastDays.forEach(([_, d]) => {
+            if (d.low !== Infinity && d.high !== -Infinity) {
+                diffs.push(d.high - d.low);
+            }
+        });
+        const avgDiff = diffs.length ? Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length) : 0;
+
+        forecastDays.forEach(([dayName, data], idx) => {
+            const dayWrapper = document.createElement('div');
+            dayWrapper.className = 'forecast-item';
+            let lowDisplay;
+            if (data.low === Infinity) {
+                // Estimate low using average difference
+                lowDisplay = (data.high !== -Infinity && avgDiff > 0) ? (data.high - avgDiff) : '--';
+            } else {
+                lowDisplay = data.low;
+            }
+            dayWrapper.innerHTML = `
+                <p class="font-semibold" style="margin-bottom:-0.75rem;">${dayName}</p>
+                <div class="flex flex-col items-center justify-center">
+                    <img class="w-12 h-12 my-1" src="${data.icon}" alt="Daily forecast icon">
+                    <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${data.high}°/${lowDisplay}°</span>
+                </div>
+                <div class="flex items-center gap-1 text-xs">
+                    <img class="w-5 h-5" src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
+                    <span>${data.pop}%</span>
+                </div>`;
+            forecastContainerEl.appendChild(dayWrapper);
+        });
+
+
         document.getElementById('weather-loading').classList.add('hidden');
         document.getElementById('weather-content').classList.remove('hidden');
+
+        // Only update rawWeatherData if we actually fetched new data (status 200 for all)
+        if (pointsResponse.status === 200 && forecastResponse.status === 200 && hourlyForecastResponse.status === 200) {
+            setRawWeatherData({
+                current: {
+                    description: currentConditions.shortForecast,
+                    temp: currentConditions.temperature,
+                },
+                forecast: {
+                    maxTemp: todayForecast.temperature,
+                    minTemp: tonightForecast ? tonightForecast.temperature : null,
+                    pop: chanceOfRain,
+                },
+                fullPoints: pointsData, // Store raw points data
+                fullForecast: forecastData, // Store raw forecast data
+                fullHourly: hourlyData,   // Store raw hourly data
+            });
+        } else {
+            // If any of them were 304, rawWeatherData should already contain the previous valid data.
+            // We don't need to update it, just ensure the UI is refreshed with current rawWeatherData.
+            console.log('Weather data not fully updated (some 304 responses). Using existing rawWeatherData.');
+        }
 
         const weatherContext = `Today's forecast is: ${currentConditions.shortForecast}, with a temperature of ${currentConditions.temperature}°. The high for today will be ${todayForecast.temperature}° and the low will be ${tonightForecast ? tonightForecast.temperature : '--'}°. The chance of rain is ${chanceOfRain}%.`;
 
