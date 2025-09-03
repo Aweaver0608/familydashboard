@@ -55,7 +55,7 @@ const feelingInsightSchema = {
     required: ["explanation", "strategies"]
 };
 
-async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
+async function callGemini(chatHistory, model = "gemini-1.5-flash-latest", responseSchema = null) {
     const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
     if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
         console.error("Gemini API key is missing.");
@@ -219,7 +219,7 @@ Based on the Bible verse "${verseToAnalyze.text}" (${verseToAnalyze.reference}),
 Ensure the entire output is a single, valid JSON object.`;
 
     try {
-        const insights = await callGemini([{ parts: [{ text: prompt }] }], undefined, verseInsightSchema);
+        const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], undefined, verseInsightSchema);
         return insights;
     } catch (error) {
         console.error("Failed to fetch consolidated insights:", error);
