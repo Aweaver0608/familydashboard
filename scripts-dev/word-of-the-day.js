@@ -1,5 +1,5 @@
 import { MERRIAM_WEBSTER_COLLEGIATE_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
-import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord, fetchDidYouKnowFactForWord } from '../scripts/gemini.js'; // Import the new function
+import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord, fetchDidYouKnowFactForWord, fetchDistractorDefinitionsForWord } from '../scripts/gemini.js'; // Import the new function
 
 const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
@@ -114,10 +114,13 @@ export async function fetchWordOfTheDay() {
         let synonyms = thesaurusData?.[0]?.meta?.syns?.[0] || [];
         let antonyms = thesaurusData?.[0]?.meta?.ants?.[0] || [];
 
+        // Fetch distractor definitions from Gemini
+        const distractors = await fetchDistractorDefinitionsForWord(word, definitions[0]);
+
         // Fetch "Did You Know?" fact from Gemini
         const didYouKnowFact = await fetchDidYouKnowFactForWord(word);
 
-        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact };
+        return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact, distractors };
 
     } catch (error) {
         console.error("Error fetching word of the day:", error);
