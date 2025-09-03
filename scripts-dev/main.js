@@ -38,24 +38,37 @@ export function getGeminiChatHistory() { return geminiChatHistory; }
 export function setGeminiChatHistory(history) { geminiChatHistory = history; }
 
 export async function refreshActivityIdeas() {
-    if (!currentWeatherContext) {
-        console.warn("No weather context available to refresh activity ideas. Attempting to fetch weather.");
-        await fetchWeather(); // Re-fetch weather to get context
-        if (!currentWeatherContext) {
-            console.error("Still no weather context after re-fetch. Cannot refresh activity ideas.");
-            const insightTrack = document.getElementById('gemini-weather-insight-track');
-            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
-            return;
-        }
-    }
+    const refreshButton = document.getElementById('refresh-ideas');
+    const originalButtonContent = refreshButton.innerHTML; // Store original content
 
-    const ideas = await fetchActivityIdeas(currentWeatherContext);
-    setActivityIdeas(ideas);
-    if (ideas.length > 0) {
-        renderActivityCarousel();
-    } else {
-        const insightTrack = document.getElementById('gemini-weather-insight-track');
-        if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+    refreshButton.disabled = true;
+    refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div> Refreshing...'; // Show spinner and text
+    lucide.createIcons(); // Re-render icons if any
+
+    try {
+        if (!currentWeatherContext) {
+            console.warn("No weather context available to refresh activity ideas. Attempting to fetch weather.");
+            await fetchWeather(); // Re-fetch weather to get context
+            if (!currentWeatherContext) {
+                console.error("Still no weather context after re-fetch. Cannot refresh activity ideas.");
+                const insightTrack = document.getElementById('gemini-weather-insight-track');
+                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
+                return; // Exit early if no context
+            }
+        }
+
+        const ideas = await fetchActivityIdeas(currentWeatherContext);
+        setActivityIdeas(ideas);
+        if (ideas.length > 0) {
+            renderActivityCarousel();
+        } else {
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+        }
+    } finally {
+        refreshButton.disabled = false;
+        refreshButton.innerHTML = originalButtonContent; // Restore original content
+        lucide.createIcons(); // Re-render icons if any
     }
 }
 

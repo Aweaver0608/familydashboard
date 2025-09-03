@@ -190,9 +190,12 @@ export async function fetchActivityIdeas() {
     const refreshButton = document.getElementById('refresh-ideas');
     const insightTrack = document.getElementById('gemini-weather-insight-track');
     
+    const originalButtonContent = refreshButton ? refreshButton.innerHTML : ''; // Store original content
+
     if (refreshButton) {
         refreshButton.disabled = true;
-        refreshButton.innerHTML = '<div class="spinner w-4 h-4"></div>';
+        refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div> Refreshing...'; // Show spinner and text
+        lucide.createIcons(); // Re-render icons if any
     }
     if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide flex items-center justify-center text-center"><span class="text-lg">✨ Loading personalized activity ideas...</span></div>`; 
     
@@ -205,7 +208,7 @@ export async function fetchActivityIdeas() {
         if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Weather data not yet available.</p></div>`; 
         if (refreshButton) {
             refreshButton.disabled = false;
-            refreshButton.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i>';
+            refreshButton.innerHTML = originalButtonContent; // Restore original content
         }
         lucide.createIcons();
         return; 
@@ -227,7 +230,7 @@ export async function fetchActivityIdeas() {
     } finally {
         if (refreshButton) {
             refreshButton.disabled = false;
-            refreshButton.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i>';
+            refreshButton.innerHTML = originalButtonContent; // Restore original content
         }
         lucide.createIcons();
     }
