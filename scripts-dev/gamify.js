@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Shuffle options
                     options = options.sort(() => Math.random() - 0.5).slice(0, 4); // Ensure max 4 options and shuffle
+                    console.log('Final quiz options:', options); // Add this line
 
                     let optionsHtml = options.map(def => `
                         <button class="quiz-option-btn" data-definition="${def}">${def}</button>

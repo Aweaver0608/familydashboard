@@ -120,6 +120,7 @@ export async function fetchWordOfTheDay() {
         // Fetch "Did You Know?" fact from Gemini
         const didYouKnowFact = await fetchDidYouKnowFactForWord(word);
 
+        console.log('Word data with distractors:', { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact, distractors });
         return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact, distractors };
 
     } catch (error) {

@@ -160,6 +160,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
 
     try {
         const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, distractorSchema);
+        console.log(`Gemini distractors for ${word}:`, result.distractors); // Add this line
         return result.distractors || [];
     } catch (error) {
         console.error(`Error fetching distractors for ${word}:`, error);
