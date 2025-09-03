@@ -427,9 +427,9 @@ async function handleFeelingSelection(event) {
     saveFamilyFeelings(familyFeelings);
     
     updateOverallMoodIcon();
+    closeAndResetFeelingsModal(); 
     // We want to show the new modal and close the old one concurrently.
     showFeelingResponse(feeling, core);
-    closeAndResetFeelingsModal(); 
 
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
