@@ -1,5 +1,5 @@
 import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
-import { fetchVerseOfTheDayFromGemini, generateAndDisplayVerseInsights, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
+import { fetchVerseOfTheDayFromGemini, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
 import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
 import { initializeQuoteOfTheDay } from './quote-of-the-day.js';

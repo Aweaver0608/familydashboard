@@ -1,7 +1,7 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
 import { setCurrentPrayerDocId, getPin, setPin } from './firebase.js';
-import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
+import { showFeelingResponse, fetchVerseInsights } from './gemini.js';
 
 let allPrayers = [];
 let currentPinEntryPerson = null;
@@ -39,11 +39,16 @@ export async function updateStaticBackground(weatherDescription) {
 export function updateVerseFromLocalList() { 
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    setCurrentVerse(NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length]);
-    
-    document.getElementById('verse-text').textContent = getCurrentVerse().text;
-    document.getElementById('verse-reference').textContent = getCurrentVerse().reference;
-    generateAndDisplayVerseInsights(getCurrentVerse());
+    const verse = NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length];
+    setCurrentVerse(verse);
+
+    document.getElementById('verse-text').textContent = verse.text;
+    document.getElementById('verse-reference').textContent = verse.reference;
+    fetchVerseInsights(verse).then(insights => {
+        if (insights) {
+            renderVerseCarousel(insights);
+        }
+    });
 }
 
 export function renderVerseCarousel(insights) {

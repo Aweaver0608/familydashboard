@@ -1,5 +1,5 @@
 import { GEMINI_API_KEY } from '../config.js';
-import { getVerseHistory, addVerseToHistory, getRawWeatherData, setGeminiChatHistory, renderChatHistory, renderVerseCarousel, getSelectedPersonForMood } from './main.js';
+import { getVerseHistory, addVerseToHistory, getRawWeatherData, setGeminiChatHistory, getSelectedPersonForMood } from './main.js';
 
 // --- JSON Schemas for Gemini ---
 const verseInsightSchema = {
@@ -159,13 +159,13 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     }
 }
 
-export async function generateAndDisplayVerseInsights(verseToAnalyze) {
+export async function fetchVerseInsights(verseToAnalyze) {
     const track = document.getElementById('gemini-verse-insight-track');
     if (track) track.innerHTML = `<div class="carousel-slide flex items-center justify-center w-full h-full"><div class="spinner"></div><span class="ml-2">Loading...</span></div>`;
 
     if (!verseToAnalyze || !verseToAnalyze.text) {
         if (track) track.innerHTML = `<div class="carousel-slide text-center p-4"><p>Verse not loaded. Cannot get insights.</p></div>`;
-        return;
+        return null;
     }
 
     const insightPrompt = `
@@ -185,15 +185,11 @@ Ensure the entire output is a single, valid JSON object.`;
 
     try {
         const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], "gemini-1.5-flash-preview-0514", verseInsightSchema);
-        renderVerseCarousel(insights);
-
-        const todayKey = new Date().toISOString().slice(0, 10);
-        localStorage.setItem('lastVerseDate', todayKey);
-        localStorage.setItem('verseData', JSON.stringify({ verse: verseToAnalyze, insights: insights }));
-
+        return insights;
     } catch (error) {
         console.error("Failed to fetch consolidated insights:", error);
         if (track) track.innerHTML = `<div class="carousel-slide p-4 text-center">Could not load insights.</div>`;
+        return null;
     }
 }
 
