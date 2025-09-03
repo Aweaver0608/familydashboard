@@ -65,9 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (currentQuizStep) {
             case QUIZ_STEPS.FEELINGS_WHEEL_STEP:
                 dailyChallengeContent.innerHTML = `<p>Please select how you are feeling today.</p>`;
-                // Hide the daily challenge modal and open the feelings modal
-                dailyChallengeModalOverlay.style.display = 'none';
-                moodTrackerBtn.click();
+                // The daily challenge modal should remain open, and the user should interact with the feelings wheel directly.
+                // The moodTrackerBtn.click() is removed as it was opening the feelings modal and closing the daily challenge modal.
                 break;
             
             case QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP:
