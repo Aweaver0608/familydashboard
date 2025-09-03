@@ -64,11 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         switch (currentQuizStep) {
             case QUIZ_STEPS.FEELINGS_WHEEL_STEP:
-                dailyChallengeContent.innerHTML = `<p>To start the daily challenge, please click on the <strong>Mood Tracker Button</strong> (the large button at the bottom center of the screen) and select how you are feeling today.</p>`;
-                // Automatically open the feelings modal if it's not already open
-                if (feelingsModalOverlay.style.display !== 'flex') {
-                    moodTrackerBtn.click();
-                }
+                dailyChallengeContent.innerHTML = `<p>Please select how you are feeling today.</p>`;
+                // Hide the daily challenge modal and open the feelings modal
+                dailyChallengeModalOverlay.style.display = 'none';
+                moodTrackerBtn.click();
                 break;
             
             case QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP:
