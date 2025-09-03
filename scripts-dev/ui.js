@@ -426,10 +426,10 @@ function handleFeelingSelection(event) {
     };
     saveFamilyFeelings(familyFeelings);
     
-    closeAndResetFeelingsModal();
     updateOverallMoodIcon();
     showFeelingResponse(feeling, core);
 
+    closeAndResetFeelingsModal();
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
         detail: { feeling, core }
