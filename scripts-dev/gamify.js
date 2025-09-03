@@ -320,11 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(feelingsModalOverlay, { attributes: true });
 
         // Listen for dailyChallengeFeelingSelected event
-        document.addEventListener('dailyChallengeFeelingSelected', (event) => {
+        document.addEventListener('dailyChallengeFeelingSelected', async (event) => {
             if (dailyChallengeModalOverlay.style.display === 'flex') { // Only proceed if daily challenge is active
                 moodTrackerBtn.classList.remove('pulse');
                 currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP; // Directly proceed to Quote of the Day
-                updateDailyChallengeDialog();
+                await updateDailyChallengeDialog();
             }
         });
     }
