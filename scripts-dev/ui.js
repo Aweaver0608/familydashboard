@@ -342,6 +342,10 @@ async function showPinEntryForFeelingSelection(personName) {
 
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
+    // Set a timeout to ensure the element is visible before focusing
+    setTimeout(() => {
+        pinEntryInput.focus();
+    }, 0);
 
 }
 
