@@ -791,3 +791,34 @@ body {
 #time-date {
     margin-bottom: -1rem; /* Adjust this value as needed */
 }
+
+/* --- Daily Challenge Word Quiz Styles --- */
+.quiz-option-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+.quiz-option-btn:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+.quiz-option-btn.selected {
+    background-color: rgba(66, 133, 244, 0.5); /* Blue selection color */
+    border-color: #4285F4;
+    transform: scale(1.02);
+}
+.quiz-option-btn.correct {
+    background-color: rgba(52, 168, 83, 0.7) !important; /* Green for correct */
+    border-color: #34A853 !important;
+}
+.quiz-option-btn.incorrect {
+    background-color: rgba(234, 67, 53, 0.7) !important; /* Red for incorrect */
+    border-color: #EA4335 !important;
+}

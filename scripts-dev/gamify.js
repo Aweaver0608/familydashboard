@@ -172,40 +172,75 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Shuffle options
                     options.sort(() => Math.random() - 0.5);
 
-                    let optionsHtml = options.map((def, index) => `
-                        <div class="mb-2">
-                            <input type="radio" id="word-option-${index}" name="word-definition" value="${def}" class="mr-2">
-                            <label for="word-option-${index}">${def}</label>
-                        </div>
+                    let optionsHtml = options.map(def => `
+                        <button class="quiz-option-btn" data-definition="${def}">${def}</button>
                     `).join('');
 
                     dailyChallengeContent.innerHTML = `
                         <p class="text-lg font-semibold mb-4">What is the meaning of "${wordData.word}"?</p>
-                        <div class="mb-4">${optionsHtml}</div>
+                        <div id="word-quiz-options" class="mb-4">${optionsHtml}</div>
                         <p id="word-feedback-message" class="text-red-400 text-sm mt-2 hidden"></p>
                     `;
                     dailyChallengeFooter.innerHTML = `<button id="submit-word-answer-btn" class="gemini-btn">Submit Answer</button>`;
+
+                    const optionButtons = dailyChallengeContent.querySelectorAll('.quiz-option-btn');
+                    optionButtons.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            optionButtons.forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                        });
+                    });
+
                     dailyChallengeFooter.querySelector('#submit-word-answer-btn').addEventListener('click', () => {
-                        const selectedOption = document.querySelector('input[name="word-definition"]:checked');
+                        const selectedOption = document.querySelector('.quiz-option-btn.selected');
                         const feedbackMessage = document.getElementById('word-feedback-message');
 
                         if (selectedOption) {
-                            if (selectedOption.value === correctDefinition) {
+                            const selectedDefinition = selectedOption.dataset.definition;
+                            const isCorrect = selectedDefinition === correctDefinition;
+
+                            // Disable all buttons and provide visual feedback
+                            optionButtons.forEach(btn => {
+                                btn.disabled = true;
+                                if (btn.dataset.definition === correctDefinition) {
+                                    btn.classList.add('correct');
+                                }
+                            });
+
+                            if (isCorrect) {
+                                selectedOption.classList.add('correct');
                                 feedbackMessage.classList.add('hidden');
-                                alert("Correct!");
                                 addDailyChallengeEntry({
                                     type: 'wordAnswer',
                                     word: wordData.word,
                                     correctDefinition: correctDefinition,
-                                    selectedAnswer: selectedOption.value,
+                                    selectedAnswer: selectedDefinition,
                                     isCorrect: true
                                 });
-                                wordOfTheDayBtn.classList.remove('pulse');
-                                currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
-                                updateDailyChallengeDialog();
+                                // Move to next step after a short delay
+                                setTimeout(() => {
+                                    wordOfTheDayBtn.classList.remove('pulse');
+                                    currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
+                                    updateDailyChallengeDialog();
+                                }, 1500);
                             } else {
-                                feedbackMessage.textContent = "Incorrect. Please try again.";
+                                selectedOption.classList.add('incorrect');
+                                feedbackMessage.textContent = "Not quite. The correct answer is highlighted in green.";
                                 feedbackMessage.classList.remove('hidden');
+                                addDailyChallengeEntry({
+                                    type: 'wordAnswer',
+                                    word: wordData.word,
+                                    correctDefinition: correctDefinition,
+                                    selectedAnswer: selectedDefinition,
+                                    isCorrect: false
+                                });
+                                // Show a continue button
+                                dailyChallengeFooter.innerHTML = `<button id="continue-word-quiz-btn" class="gemini-btn">Continue</button>`;
+                                dailyChallengeFooter.querySelector('#continue-word-quiz-btn').addEventListener('click', () => {
+                                    wordOfTheDayBtn.classList.remove('pulse');
+                                    currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
+                                    updateDailyChallengeDialog();
+                                });
                             }
                         } else {
                             alert("Please select an answer.");
