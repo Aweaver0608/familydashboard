@@ -55,7 +55,7 @@ const feelingInsightSchema = {
     required: ["explanation", "strategies"]
 };
 
-async function callGemini(chatHistory, model = "gemini-1.5-flash-preview-0514", responseSchema = null) {
+async function callGemini(chatHistory, model = "gemini-1.5-flash", responseSchema = null) {
     const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
     if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
         console.error("Gemini API key is missing.");
