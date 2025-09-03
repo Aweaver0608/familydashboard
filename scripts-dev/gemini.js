@@ -123,7 +123,7 @@ export async function fetchAgeAppropriateWordFromGemini(wordHistory) {
 export async function fetchGeminiSentencesForWord(word) {
     const prompt = `Provide an array of 2-3 example sentences for the word "${word}" that are easy for a child (ages 8-13) to understand. Return as a JSON array of strings.`;
     const schema = { type: "ARRAY", items: { type: "STRING" } };
-    const result = await callGemini([{ parts: [{ text: prompt }] }], "gemini-1.5-flash-preview-0514", { type: "OBJECT", properties: { "sentences": schema }, required: ["sentences"] });
+    const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, { type: "OBJECT", properties: { "sentences": schema }, required: ["sentences"] });
     return result.sentences || [];
 }
 
@@ -151,7 +151,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     `;
 
     try {
-        const result = await callGemini([{ parts: [{ text: prompt }] }], "gemini-1.5-flash-preview-0514", distractorSchema);
+        const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, distractorSchema);
         return result.distractors || [];
     } catch (error) {
         console.error(`Error fetching distractors for ${word}:`, error);
@@ -163,7 +163,7 @@ export async function fetchActivityIdeas(weatherContext) {
     const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
     try {
-        const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], "gemini-1.5-flash-preview-0514", activitySchema);
+        const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], undefined, activitySchema);
         return parsedJson.activities || [];
     } catch (error) {
         console.error("Error calling Gemini API for weather:", error);
@@ -219,7 +219,7 @@ Based on the Bible verse "${verseToAnalyze.text}" (${verseToAnalyze.reference}),
 Ensure the entire output is a single, valid JSON object.`;
 
     try {
-        const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], "gemini-1.5-flash-preview-0514", verseInsightSchema);
+        const insights = await callGemini([{ parts: [{ text: prompt }] }], undefined, verseInsightSchema);
         return insights;
     } catch (error) {
         console.error("Failed to fetch consolidated insights:", error);
