@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-        document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
+        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
