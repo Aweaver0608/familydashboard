@@ -50,7 +50,18 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-        document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
+        document.getElementById('refresh-ideas').addEventListener('click', async () => {
+            const weatherData = getRawWeatherData();
+            const weatherContext = weatherData ? `Today's forecast is: ${weatherData.current.description}, with a temperature of ${weatherData.current.temp}°. The high for today will be ${weatherData.forecast.maxTemp}° and the low will be ${weatherData.forecast.minTemp}°. The chance of rain is ${weatherData.forecast.pop}%.` : '';
+            const ideas = await fetchActivityIdeas(weatherContext);
+            setActivityIdeas(ideas);
+            if (ideas.length > 0) {
+                renderActivityCarousel();
+            } else {
+                const insightTrack = document.getElementById('gemini-weather-insight-track');
+                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+            }
+        });
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
