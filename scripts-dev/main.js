@@ -18,6 +18,7 @@ let currentVerseInsightIndex = 0;
 const VERSE_HISTORY_LENGTH = 365;
 let selectedPersonForMood = null;
 let geminiChatHistory = [];
+let currentWeatherContext = ''; // New global variable
 
 export function getRawWeatherData() { return rawWeatherData; }
 export function setRawWeatherData(data) { rawWeatherData = data; }
@@ -36,6 +37,27 @@ export function setSelectedPersonForMood(person) { selectedPersonForMood = perso
 export function getGeminiChatHistory() { return geminiChatHistory; }
 export function setGeminiChatHistory(history) { geminiChatHistory = history; }
 
+export async function refreshActivityIdeas() {
+    if (!currentWeatherContext) {
+        console.warn("No weather context available to refresh activity ideas. Attempting to fetch weather.");
+        await fetchWeather(); // Re-fetch weather to get context
+        if (!currentWeatherContext) {
+            console.error("Still no weather context after re-fetch. Cannot refresh activity ideas.");
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
+            return;
+        }
+    }
+
+    const ideas = await fetchActivityIdeas(currentWeatherContext);
+    setActivityIdeas(ideas);
+    if (ideas.length > 0) {
+        renderActivityCarousel();
+    } else {
+        const insightTrack = document.getElementById('gemini-weather-insight-track');
+        if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+    }
+}
 
 // --- APPLICATION LOGIC ---
 document.addEventListener('DOMContentLoaded', function() {
@@ -50,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-        document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
+        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
@@ -318,6 +340,7 @@ async function fetchWeather() {
         document.getElementById('weather-content').classList.remove('hidden');
 
         const weatherContext = `Today's forecast is: ${currentConditions.shortForecast}, with a temperature of ${currentConditions.temperature}°. The high for today will be ${todayForecast.temperature}° and the low will be ${tonightForecast ? tonightForecast.temperature : '--'}°. The chance of rain is ${chanceOfRain}%.`;
+        currentWeatherContext = weatherContext; // Store the context
 
         // Prepare data for Gemini prompt
         setRawWeatherData({

@@ -171,7 +171,7 @@ export function renderChatHistory() {
     getGeminiChatHistory().forEach(message => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.role === 'user' ? 'user-message' : 'model-message'}`;
-        messageDiv.innerHTML = `<p>${message.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+        messageDiv.innerHTML = `<p>${marked.parse(message.parts[0].text)}</p>`;
         answerContainer.appendChild(messageDiv);
     });
     const lastMessage = answerContainer.lastElementChild;
