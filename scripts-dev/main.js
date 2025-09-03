@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-<<<<<<< HEAD
+
         document.getElementById('refresh-ideas').addEventListener('click', async () => {
             const weatherData = getRawWeatherData();
             const weatherContext = weatherData ? `Today's forecast is: ${weatherData.current.description}, with a temperature of ${weatherData.current.temp}°. The high for today will be ${weatherData.forecast.maxTemp}° and the low will be ${weatherData.forecast.minTemp}°. The chance of rain is ${weatherData.forecast.pop}%.` : '';
@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
             }
         });
-=======
+
         document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
->>>>>>> fa160b242482d3c1ce268feee36e11de29a87ae4
+
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
