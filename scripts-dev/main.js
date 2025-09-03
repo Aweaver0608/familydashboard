@@ -161,18 +161,10 @@ async function refreshActivityIdeas() {
     refreshBtn.disabled = true;
 
     try {
-        let rawData = getRawWeatherData();
-        console.log('refreshActivityIdeas called. rawData:', rawData);
-
-        // If weather data is not available, fetch it first
+        const rawData = getRawWeatherData();
         if (!rawData || !rawData.current || !rawData.forecast) {
-            console.warn("Weather data not available. Attempting to fetch weather data...");
-            await fetchWeather(); // Fetch weather data
-            rawData = getRawWeatherData(); // Get updated rawData after fetching
-            if (!rawData || !rawData.current || !rawData.forecast) {
-                console.error("Failed to fetch weather data. Cannot refresh activity ideas.");
-                return; // Exit if weather data is still not available
-            }
+            console.warn("Cannot refresh activity ideas: weather data not available.");
+            return;
         }
 
         const weatherContext = `Today's forecast is: ${rawData.current.description}, with a temperature of ${rawData.current.temp}°. The high for today will be ${rawData.forecast.maxTemp}° and the low will be ${rawData.forecast.minTemp}°. The chance of rain is ${rawData.forecast.pop}%.`;
