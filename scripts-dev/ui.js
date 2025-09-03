@@ -427,9 +427,10 @@ async function handleFeelingSelection(event) {
     saveFamilyFeelings(familyFeelings);
     
     updateOverallMoodIcon();
-    await showFeelingResponse(feeling, core);
+    // We want to show the new modal and close the old one concurrently.
+    showFeelingResponse(feeling, core);
+    closeAndResetFeelingsModal(); 
 
-    closeAndResetFeelingsModal(); // This will now correctly wait until the insight modal is shown.
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
         detail: { feeling, core }
