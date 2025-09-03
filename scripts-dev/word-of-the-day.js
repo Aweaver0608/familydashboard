@@ -56,7 +56,7 @@ function addWordToHistory(word) {
 export async function fetchWordOfTheDay() {
     try {
         const wordHistory = getWordHistory();
-        const randomWord = await fetchAgeAppropriateWordFromGemini(wordHistory); // Pass history to Gemini
+        const randomWord = (await fetchAgeAppropriateWordFromGemini(wordHistory)).trim(); // Add .trim() here // Pass history to Gemini
 
         if (!randomWord) {
             console.warn("Gemini did not return a word.");
@@ -80,7 +80,7 @@ export async function fetchWordOfTheDay() {
             return null;
         }
 
-        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.stems && entry.meta.stems.includes(randomWord.toLowerCase()));
+        const wordEntry = dictionaryData.find(entry => entry.meta && entry.meta.id.startsWith(randomWord.toLowerCase()));
 
         if (!wordEntry || !wordEntry.meta || !wordEntry.hwi || !wordEntry.def) {
             console.warn(`Invalid dictionary data structure for ${randomWord}. Word entry:`, wordEntry, `Raw data:`, JSON.stringify(dictionaryData, null, 2));
@@ -120,7 +120,6 @@ export async function fetchWordOfTheDay() {
         // Fetch "Did You Know?" fact from Gemini
         const didYouKnowFact = await fetchDidYouKnowFactForWord(word);
 
-        console.log('Word data with distractors:', { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact, distractors });
         return { word, phonetic, partOfSpeech, definitions, synonyms, antonyms, audioUrl, examples, etymology, didYouKnowFact, distractors };
 
     } catch (error) {

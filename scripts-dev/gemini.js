@@ -147,7 +147,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     const prompt = `
         For the word "${word}", the correct definition is: "${correctDefinition}".
 
-        I need you to generate 2 plausible but incorrect definitions for this word. These will be used as distractors in a multiple-choice quiz for a child (ages 8-13).
+        I need you to generate 3 plausible but incorrect definitions for this word. These will be used as distractors in a multiple-choice quiz for a child (ages 8-13).
 
         Here are the requirements for the distractors:
         1.  **Plausible:** They should sound like real definitions.
@@ -160,7 +160,6 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
 
     try {
         const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, distractorSchema);
-        console.log(`Gemini distractors for ${word}:`, result.distractors); // Add this line
         return result.distractors || [];
     } catch (error) {
         console.error(`Error fetching distractors for ${word}:`, error);

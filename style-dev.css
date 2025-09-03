@@ -24,6 +24,7 @@
 .highlight-active {
     box-shadow: inset 0 0 15px 5px rgba(0, 183, 255, 0.7);
     transition: box-shadow 0.3s ease-in-out;
+    animation: pulse-animation 2s infinite; /* Add this line */
 }
 
 .pulse {

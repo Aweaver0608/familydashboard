@@ -162,29 +162,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const wordData = getCachedWordData();
 
                 if (wordData && wordData.definitions && wordData.definitions.length > 0) {
-                    const correctDefinition = wordData.definitions[0]; // Use the first definition as correct
-                    let options = [correctDefinition];
+                    // Select a random correct definition from the available definitions
+                    const correctDefinition = wordData.definitions[Math.floor(Math.random() * wordData.definitions.length)];
+                    let options = [correctDefinition]; // Start with only the chosen correct definition
 
-                    // Add other definitions as distractors if available
-                    for (let i = 1; i < wordData.definitions.length; i++) {
-                        options.push(wordData.definitions[i]);
-                    }
-
-                    // Add high-quality distractors from Gemini
+                    // Add Gemini-generated distractors
                     if (wordData.distractors && wordData.distractors.length > 0) {
                         options.push(...wordData.distractors);
                     }
 
-                    // As a fallback, if we still don't have enough options, add other real definitions
-                    if (options.length < 3 && wordData.definitions.length > 1) {
-                        for (let i = 1; i < wordData.definitions.length && options.length < 4; i++) {
-                            options.push(wordData.definitions[i]);
-                        }
-                    }
-
-                    // Shuffle options
-                    options = options.sort(() => Math.random() - 0.5).slice(0, 4); // Ensure max 4 options and shuffle
-                    console.log('Final quiz options:', options); // Add this line
+                    // Shuffle options and take the first 4
+                    // Shuffle options and take the first 4
+                    options = options.sort(() => Math.random() - 0.5).slice(0, 4);
 
                     let optionsHtml = options.map(def => `
                         <button class="quiz-option-btn" data-definition="${def}">${def}</button>
