@@ -325,7 +325,7 @@ async function fetchWeather() {
             dayWrapper.innerHTML = `
                 <p class="day-name" style="font-size:1.25rem; font-weight:700; margin-bottom:-0.75rem;">${dayName}</p>
                 <div class="flex flex-col items-center justify-center">
-                    <img class="w-12 h-12 my-1" src="${getWeatherIcon(hour.shortForecast, hour.isDaytime)}" alt="Hourly forecast icon">
+                    <img class="w-12 h-12 my-1" src="${data.icon}" alt="Daily forecast icon">
                     <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${data.high}°/${lowDisplay}°</span>
                 </div>
                 <div class="flex items-center gap-1 text-xs">
