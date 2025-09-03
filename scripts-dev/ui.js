@@ -427,11 +427,12 @@ async function handleFeelingSelection(event) { // Ensure this function is async
     saveFamilyFeelings(familyFeelings);
     
     updateOverallMoodIcon();
-    
-    // First, show the new insight modal and WAIT for it to complete.
-    await showFeelingResponse(feeling, core);
-    // THEN, close the original feelings wheel modal.
-    closeAndResetFeelingsModal();
+
+    // First, close the original feelings wheel modal.
+    closeAndResetFeelingsModal(); 
+    // Then, show the new insight modal, which will remain open.
+    showFeelingResponse(feeling, core);
+
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
         detail: { feeling, core }
