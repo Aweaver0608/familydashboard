@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add event listener for the close button
         dailyChallengeHeader.querySelector('#close-daily-challenge-modal').addEventListener('click', () => {
             dailyChallengeModalOverlay.style.display = 'none'; // Hide the overlay
-            moodTrackerBtn.classList.remove('pulse');
+            moodTrackerBtn.classList.remove('highlight-active');
             currentQuizStep = null; // Reset quiz state when closing
         });
 
@@ -69,12 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
             case QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP:
                 const quoteText = document.getElementById('quote-text').textContent;
                 const quoteAuthor = document.getElementById('quote-author').textContent;
-                document.getElementById('quote-banner').classList.add('pulse');
+                document.getElementById('quote-banner').classList.add('highlight-active');
                 dailyChallengeContent.innerHTML = `
                     <p class="text-lg font-semibold mb-4">Today's Quote:</p>
                     <blockquote class="text-xl italic text-center mb-6">${quoteText} ${quoteAuthor}</blockquote>
                     <p class="mb-4">What does this quote mean to you?</p>
                     <textarea id="quote-reflection-input" class="form-input w-full h-24" placeholder="Type your thoughts here..."></textarea>
+                    <p id="quote-feedback-message" class="text-red-400 text-sm mt-2 hidden"></p>
                 `;
                 dailyChallengeFooter.innerHTML = `<button id="submit-reflection-btn" class="gemini-btn">Submit Reflection</button>`;
                 dailyChallengeFooter.querySelector('#submit-reflection-btn').addEventListener('click', () => {
@@ -86,19 +87,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             quote: quoteText,
                             author: quoteAuthor
                         });
-                        document.getElementById('quote-banner').classList.remove('pulse');
+                        document.getElementById('quote-banner').classList.remove('highlight-active');
                         currentVerseQuestionIndex = 0; // Reset for the verse step
                         verseAnswers = {}; // Reset for the verse step
                         currentQuizStep = QUIZ_STEPS.VERSE_OF_THE_DAY_STEP;
                         updateDailyChallengeDialog();
                     } else {
-                        alert("Please write your reflection before submitting.");
+                        const feedbackMessage = document.getElementById('quote-feedback-message');
+                        feedbackMessage.textContent = "Please write your reflection before submitting.";
+                        feedbackMessage.classList.remove('hidden');
                     }
                 });
                 break;
             case QUIZ_STEPS.VERSE_OF_THE_DAY_STEP:
                 const verseWidget = document.getElementById('verse');
-                verseWidget.classList.add('pulse');
+                verseWidget.classList.add('highlight-active');
                 const verseInsights = getVerseInsights();
                 const applicationQuestions = verseInsights?.devotional?.application_questions || [];
 
@@ -108,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-lg font-semibold mb-4">Think About It (${currentVerseQuestionIndex + 1}/${applicationQuestions.length}):</p>
                         <p class="mb-2">${currentQuestion}</p>
                         <textarea id="verse-question-input" class="form-input w-full h-20 mb-4" placeholder="Your answer..."></textarea>
+                        <p id="verse-feedback-message" class="text-red-400 text-sm mt-2 hidden"></p>
                     `;
 
                     const isLastQuestion = currentVerseQuestionIndex === applicationQuestions.length - 1;
@@ -130,21 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
                                     reference: document.getElementById('verse-reference').textContent,
                                     answers: verseAnswers
                                 });
-                                verseWidget.classList.remove('pulse');
+                                verseWidget.classList.remove('highlight-active');
                                 currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
                             }
                             updateDailyChallengeDialog(); // Re-render for next question or next step
                         } else {
-                            alert("Please provide an answer.");
+                            const feedbackMessage = document.getElementById('verse-feedback-message');
+                            feedbackMessage.textContent = "Please provide an answer.";
+                            feedbackMessage.classList.remove('hidden');
                         }
                     });
                 } else {
                     // This block handles either no questions or finishing the questions
-                    verseWidget.classList.remove('pulse');
+                    verseWidget.classList.remove('highlight-active');
                     dailyChallengeContent.innerHTML = `<p>Verse reflection complete. Moving to the next step.</p>`;
                     dailyChallengeFooter.innerHTML = `<button id="continue-verse-btn" class="gemini-btn">Continue</button>`;
                     dailyChallengeFooter.querySelector('#continue-verse-btn').addEventListener('click', () => {
-                        verseWidget.classList.remove('pulse');
+                        verseWidget.classList.remove('highlight-active');
                         currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
                         updateDailyChallengeDialog();
                     });
@@ -152,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case QUIZ_STEPS.WORD_OF_THE_DAY_STEP:
                 const wordOfTheDayBtn = document.getElementById('word-of-the-day-btn');
-                wordOfTheDayBtn.classList.add('pulse');
+                wordOfTheDayBtn.classList.add('highlight-active');
                 const wordData = getCachedWordData();
 
                 if (wordData && wordData.definitions && wordData.definitions.length > 0) {
@@ -226,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
                                 // Move to next step after a short delay
                                 setTimeout(() => {
-                                    wordOfTheDayBtn.classList.remove('pulse');
+                                    wordOfTheDayBtn.classList.remove('highlight-active');
                                     currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                                     updateDailyChallengeDialog();
                                 }, 1500);
@@ -244,20 +250,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                 // Show a continue button
                                 dailyChallengeFooter.innerHTML = `<button id="continue-word-quiz-btn" class="gemini-btn">Continue</button>`;
                                 dailyChallengeFooter.querySelector('#continue-word-quiz-btn').addEventListener('click', () => {
-                                    wordOfTheDayBtn.classList.remove('pulse');
+                                    wordOfTheDayBtn.classList.remove('highlight-active');
                                     currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                                     updateDailyChallengeDialog();
                                 });
                             }
                         } else {
-                            alert("Please select an answer.");
+                            const feedbackMessage = document.getElementById('word-feedback-message');
+                            feedbackMessage.textContent = "Please select an answer.";
+                            feedbackMessage.classList.remove('hidden');
                         }
                     });
                 } else {
                     dailyChallengeContent.innerHTML = `<p>Word of the Day data not available. Skipping this step.</p>`;
                     dailyChallengeFooter.innerHTML = `<button id="skip-word-btn" class="gemini-btn">Continue</button>`;
                     dailyChallengeFooter.querySelector('#skip-word-btn').addEventListener('click', () => {
-                        wordOfTheDayBtn.classList.remove('pulse');
+                        wordOfTheDayBtn.classList.remove('highlight-active');
                         currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                         updateDailyChallengeDialog();
                     });
@@ -265,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case QUIZ_STEPS.PRAYER_LIST_STEP:
                 const openPrayerModalBtn = document.getElementById('open-prayer-modal');
-                openPrayerModalBtn.classList.add('pulse');
+                openPrayerModalBtn.classList.add('highlight-active');
                 dailyChallengeContent.innerHTML = `
                     <p class="text-lg font-semibold mb-4">Great job! Now, let's encourage our family.</p>
                     <p class="mb-4">Please review the prayer requests and pray for them.</p>
@@ -279,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     openPrayerModalBtn.click();
                 });
                 dailyChallengeFooter.querySelector('#i-have-prayed-btn').addEventListener('click', () => {
-                    openPrayerModalBtn.classList.remove('pulse');
+                    openPrayerModalBtn.classList.remove('highlight-active');
                     currentQuizStep = QUIZ_STEPS.QUIZ_COMPLETE_STEP;
                     updateDailyChallengeDialog();
                 });
@@ -298,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startDailyChallenge() {
         dailyChallengeModalOverlay.style.display = 'flex'; // Show the overlay
-        moodTrackerBtn.classList.add('pulse');
+        moodTrackerBtn.classList.add('highlight-active');
         currentQuizStep = QUIZ_STEPS.FEELINGS_WHEEL_STEP;
         updateDailyChallengeDialog();
     }
@@ -311,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     if (feelingsModalOverlay.style.display === 'flex') {
-                        moodTrackerBtn.classList.remove('pulse'); // Remove pulse when modal opens
+                        moodTrackerBtn.classList.remove('highlight-active'); // Remove highlight when modal opens
                     }
                 }
             }
@@ -322,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Listen for dailyChallengeFeelingSelected event
         document.addEventListener('dailyChallengeFeelingSelected', async (event) => {
             if (dailyChallengeModalOverlay.style.display === 'flex') { // Only proceed if daily challenge is active
-                moodTrackerBtn.classList.remove('pulse');
+                moodTrackerBtn.classList.remove('highlight-active');
                 currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP; // Directly proceed to Quote of the Day
                 await updateDailyChallengeDialog();
             }
