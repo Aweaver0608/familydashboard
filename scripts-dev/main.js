@@ -18,7 +18,6 @@ let currentVerseInsightIndex = 0;
 const VERSE_HISTORY_LENGTH = 365;
 let selectedPersonForMood = null;
 let geminiChatHistory = [];
-let lastFetchedWeatherContext = null;
 
 export function getRawWeatherData() { return rawWeatherData; }
 export function setRawWeatherData(data) { rawWeatherData = data; }
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
+        document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
@@ -154,34 +153,6 @@ async function updateConversationStarter() {
     
     questionEl.textContent = question;
     refreshBtn.disabled = false;
-}
-
-async function refreshActivityIdeas() {
-    const refreshBtn = document.getElementById('refresh-ideas');
-    refreshBtn.disabled = true;
-
-    try {
-        const rawData = getRawWeatherData();
-        if (!rawData || !rawData.current || !rawData.forecast) {
-            console.warn("Cannot refresh activity ideas: weather data not available.");
-            return;
-        }
-
-        const weatherContext = `Today's forecast is: ${rawData.current.description}, with a temperature of ${rawData.current.temp}°. The high for today will be ${rawData.forecast.maxTemp}° and the low will be ${rawData.forecast.minTemp}°. The chance of rain is ${rawData.forecast.pop}%.`;
-
-        const ideas = await fetchActivityIdeas(weatherContext);
-        setActivityIdeas(ideas);
-        if (ideas.length > 0) {
-            renderActivityCarousel();
-        } else {
-            const insightTrack = document.getElementById('gemini-weather-insight-track');
-            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
-        }
-    } catch (error) {
-        console.error("Error refreshing activity ideas:", error);
-    } finally {
-        refreshBtn.disabled = false;
-    }
 }
 
 async function scheduleDailyVerseUpdate() {
@@ -348,17 +319,26 @@ async function fetchWeather() {
 
         const weatherContext = `Today's forecast is: ${currentConditions.shortForecast}, with a temperature of ${currentConditions.temperature}°. The high for today will be ${todayForecast.temperature}° and the low will be ${tonightForecast ? tonightForecast.temperature : '--'}°. The chance of rain is ${chanceOfRain}%.`;
 
-        // Only fetch activity ideas if the weather context has changed
-        if (weatherContext !== lastFetchedWeatherContext) {
-            const ideas = await fetchActivityIdeas(weatherContext);
-            setActivityIdeas(ideas);
-            if (ideas.length > 0) {
-                renderActivityCarousel();
-            } else {
-                const insightTrack = document.getElementById('gemini-weather-insight-track');
-                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+        // Prepare data for Gemini prompt
+        setRawWeatherData({
+            current: {
+                temp: currentConditions.temperature,
+                description: currentConditions.shortForecast,
+            },
+            forecast: {
+                maxTemp: todayForecast.temperature,
+                minTemp: tonightForecast ? tonightForecast.temperature : todayForecast.temperature,
+                pop: chanceOfRain
             }
-            lastFetchedWeatherContext = weatherContext;
+        });
+
+        const ideas = await fetchActivityIdeas(weatherContext);
+        setActivityIdeas(ideas);
+        if (ideas.length > 0) {
+            renderActivityCarousel();
+        } else {
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
         }
 
     } catch (error) {
