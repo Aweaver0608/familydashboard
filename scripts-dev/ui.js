@@ -436,6 +436,25 @@ async function handleFeelingSelection(event) { // Ensure this function is async
     }));
 }
 
+function triggerConfetti() {
+    const confettiCount = 100;
+    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.animationDelay = `${Math.random() * 2}s`;
+        document.body.appendChild(confetti);
+
+        // Remove confetti after animation to prevent DOM bloat
+        confetti.addEventListener('animationend', () => {
+            confetti.remove();
+        });
+    }
+}
+
 export function updateOverallMoodIcon() {
     const btnIcon = document.getElementById('overall-mood-icon');
     const moodBtn = document.getElementById('mood-tracker-btn');

@@ -42,3 +42,24 @@
         box-shadow: inset 0 0 0 0 rgba(0, 183, 255, 0);
     }
 }
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background-color: #f00; /* Default color, will be overridden by JS */
+    top: -10px; /* Start above the viewport */
+    z-index: 9999;
+    animation: confetti-fall 3s ease-out forwards;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}

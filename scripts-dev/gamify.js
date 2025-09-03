@@ -1,6 +1,7 @@
 import { addDailyChallengeEntry, getPin, setPin } from './firebase.js';
 import { getCachedWordData as getWordOfTheDayData } from './word-of-the-day.js';
 import { getSelectedPersonForMood } from './main.js';
+import { triggerConfetti } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const dailyChallengeBtn = document.getElementById('daily-challenge-btn');
@@ -64,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (currentQuizStep) {
             case QUIZ_STEPS.FEELINGS_WHEEL_STEP:
                 dailyChallengeContent.innerHTML = `<p>To start the daily challenge, please click on the <strong>Mood Tracker Button</strong> (the large button at the bottom center of the screen) and select how you are feeling today.</p>`;
+                // Automatically open the feelings modal if it's not already open
+                if (feelingsModalOverlay.style.display !== 'flex') {
+                    moodTrackerBtn.click();
+                }
                 break;
             
             case QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP:
@@ -280,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     openPrayerModalBtn.classList.remove('highlight-active');
                     currentQuizStep = QUIZ_STEPS.QUIZ_COMPLETE_STEP;
                     updateDailyChallengeDialog();
+                    triggerConfetti();
                 });
                 break;
             case QUIZ_STEPS.QUIZ_COMPLETE_STEP:
