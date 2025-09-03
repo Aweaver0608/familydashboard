@@ -332,6 +332,9 @@ async function showPinEntryForFeelingSelection(personName) {
         submitPinEntryBtn.textContent = 'Submit PIN';
     }
 
+    pinEntryPersonNameSpan.textContent = personName;
+    pinEntryPersonNameCreateSpan.textContent = personName;
+
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
 
@@ -339,8 +342,6 @@ async function showPinEntryForFeelingSelection(personName) {
 
     closePinEntryModalBtn.addEventListener('click', () => {
         pinEntryModalOverlay.style.display = 'none';
-        closeAndResetFeelingsModal(); // Close feelings modal as well
-    });
 }
 
 function displayFeelingsWheelContent(name) {
