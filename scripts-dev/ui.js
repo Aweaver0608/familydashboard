@@ -4,7 +4,8 @@ import { setCurrentPrayerDocId, getPin } from './firebase.js';
 import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
 
 let allPrayers = [];
-let currentPinEntryPerson = null; // To store the name of the person for PIN entry
+let currentPinEntryPerson = null;
+let isPinCreateMode = false; // New global variable // To store the name of the person for PIN entry
 
 export function updateTime() {
     const now = new Date();
@@ -178,6 +179,8 @@ export function initializeFeelingsWheel() {
     const modalOverlay = document.getElementById('feelings-modal-overlay');
     const openBtn = document.getElementById('mood-tracker-btn');
     const closeBtn = document.getElementById('close-feelings-modal');
+    const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+    const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn'); // Get reference here
     
     openBtn.addEventListener('click', () => {
         showNameSelection();
@@ -193,6 +196,14 @@ export function initializeFeelingsWheel() {
         }
     });
 
+    // Centralize PIN modal listeners
+    if (pinEntryModalOverlay) {
+        const closePinEntryModalBtn = document.getElementById('close-pin-entry-modal');
+        submitPinEntryBtn.addEventListener('click', handlePinSubmit);
+        closePinEntryModalBtn.addEventListener('click', () => {
+            pinEntryModalOverlay.style.display = 'none';
+        });
+    }
     updateOverallMoodIcon();
 }
 
@@ -248,6 +259,45 @@ function showNameSelection() {
     });
 }
 
+// New top-level function for handling PIN submission
+async function handlePinSubmit() {
+    const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
+    const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
+    const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+
+    const enteredPin = pinEntryInput.value;
+
+    if (isPinCreateMode) { // Use the global flag
+        const confirmedPin = pinConfirmInput.value;
+        if (enteredPin === '' || confirmedPin === '') {
+            pinEntryErrorMessage.textContent = "PIN cannot be empty.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            return;
+        }
+        if (enteredPin !== confirmedPin) {
+            pinEntryErrorMessage.textContent = "PINs do not match. Please try again.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            pinEntryInput.value = '';
+            pinConfirmInput.value = '';
+            return;
+        }
+        await setPin(currentPinEntryPerson, enteredPin);
+        pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
+        displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+    } else { // Enter PIN mode
+        const storedPin = await getPin(currentPinEntryPerson); // Re-fetch storedPin here
+        if (enteredPin === storedPin) {
+            pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
+            displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+        } else {
+            pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            pinEntryInput.value = '';
+        }
+    }
+}
+
 async function showPinEntryForFeelingSelection(personName) {
     currentPinEntryPerson = personName;
     const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
@@ -260,19 +310,15 @@ async function showPinEntryForFeelingSelection(personName) {
     const pinConfirmInput = document.getElementById('pin-confirm-input');
     const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
     const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn');
-    const closePinEntryModalBtn = document.getElementById('close-pin-entry-modal');
 
-    pinEntryPersonNameSpan.textContent = personName;
-    pinEntryPersonNameCreateSpan.textContent = personName; // For the create message
+    const storedPin = await getPin(personName);
+    isPinCreateMode = !storedPin; // Set the global flag
     pinEntryInput.value = ''; // Clear previous input
     pinConfirmInput.value = ''; // Clear previous input
     pinEntryErrorMessage.classList.add('hidden'); // Hide any previous error messages
 
-    const storedPin = await getPin(currentPinEntryPerson);
-    let isCreateMode = !storedPin;
-
     // Configure modal based on mode
-    if (isCreateMode) {
+    if (isPinCreateMode) {
         pinModalTitle.textContent = 'Create PIN';
         pinEnterMessage.classList.add('hidden');
         pinCreateMessage.classList.remove('hidden');
@@ -289,44 +335,7 @@ async function showPinEntryForFeelingSelection(personName) {
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
 
-    // Define the event handler function directly within this scope
-    const handlePinSubmit = async () => {
-        const enteredPin = pinEntryInput.value;
-
-        if (isCreateMode) {
-            const confirmedPin = pinConfirmInput.value;
-            if (enteredPin === '' || confirmedPin === '') {
-                pinEntryErrorMessage.textContent = "PIN cannot be empty.";
-                pinEntryErrorMessage.classList.remove('hidden');
-                return;
-            }
-            if (enteredPin !== confirmedPin) {
-                pinEntryErrorMessage.textContent = "PINs do not match. Please try again.";
-                pinEntryErrorMessage.classList.remove('hidden');
-                pinEntryInput.value = '';
-                pinConfirmInput.value = '';
-                return;
-            }
-            await setPin(currentPinEntryPerson, enteredPin);
-            pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
-            displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
-        } else { // Enter PIN mode
-            const storedPin = await getPin(currentPinEntryPerson); // Re-fetch storedPin here
-            if (enteredPin === storedPin) {
-                pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
-                displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
-            } else {
-                pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
-                pinEntryErrorMessage.classList.remove('hidden');
-                pinEntryInput.value = '';
-            }
-        }
-    };
-
-    // Remove any existing listener before adding the new one
-    submitPinEntryBtn.removeEventListener('click', handlePinSubmit);
-    // Attach the new listener
-    submitPinEntryBtn.addEventListener('click', handlePinSubmit);
+    
 
     closePinEntryModalBtn.addEventListener('click', () => {
         pinEntryModalOverlay.style.display = 'none';
