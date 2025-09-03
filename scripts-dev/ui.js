@@ -338,10 +338,6 @@ async function showPinEntryForFeelingSelection(personName) {
     pinEntryModalOverlay.style.display = 'flex';
     lucide.createIcons();
 
-    
-
-    closePinEntryModalBtn.addEventListener('click', () => {
-        pinEntryModalOverlay.style.display = 'none';
 }
 
 function displayFeelingsWheelContent(name) {
