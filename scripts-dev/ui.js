@@ -428,7 +428,7 @@ async function handleFeelingSelection(event) { // Ensure this function is async
     
     updateOverallMoodIcon();
     showFeelingResponse(feeling, core); // This will open the new insight modal.
-    closeAndResetFeelingsModal(); // This closes the original feelings wheel modal.
+    document.getElementById('feelings-modal-overlay').style.display = 'none';
 
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
@@ -484,11 +484,13 @@ export function initializeFeelingInsightModal() {
 
     closeBtn.addEventListener('click', () => {
         modalOverlay.style.display = 'none';
+        document.getElementById('feelings-modal-overlay').style.display = 'none';
     });
 
     modalOverlay.addEventListener('click', (event) => {
         if (event.target === modalOverlay) {
             modalOverlay.style.display = 'none';
+            document.getElementById('feelings-modal-overlay').style.display = 'none';
         }
     });
 }

@@ -257,4 +257,54 @@ export async function askGemini(chatHistory, question) {
     }
 }
 
-export async function showFeelingResponse() { console.log("showFeelingResponse called"); }
+export async function showFeelingResponse(feeling, coreEmotion) {
+    const modalOverlay = document.getElementById('feeling-insight-modal-overlay');
+    const titleEl = document.getElementById('feeling-insight-title');
+    const bodyEl = document.getElementById('feeling-insight-body');
+
+    // 1. Show the modal immediately with a loading state
+    modalOverlay.style.display = 'flex';
+    titleEl.textContent = `Understanding: ${feeling}`;
+    bodyEl.innerHTML = '<div class="flex items-center justify-center w-full h-full"><div class="spinner"></div><span class="ml-2">Loading insights...</span></div>';
+    lucide.createIcons();
+
+    // 2. Fetch the insights from Gemini
+    const person = getSelectedPersonForMood();
+    const prompt = `
+        Act as a child psychologist speaking to ${person}.
+        The user is feeling "${feeling}", which is a specific type of the core emotion "${coreEmotion}".
+        
+        Generate a JSON object with two keys: "explanation" and "strategies".
+        
+        1.  "explanation": A short, simple, and reassuring explanation of what it means to feel ${feeling}. Validate the feeling as normal and okay.
+        2.  "strategies": An array of 2-3 simple, actionable coping strategies or activities that a child can do to manage or process this feeling. Each item in the array should be an object with a "title" and a "description".
+
+        Keep the tone gentle, validating, and age-appropriate.
+    `;
+
+    try {
+        const insight = await callGemini([{ parts: [{ text: prompt }] }], undefined, feelingInsightSchema);
+
+        // 3. Populate the modal with the fetched content
+        if (insight && insight.explanation && insight.strategies) {
+            let strategiesHTML = insight.strategies.map(strategy => `
+                <div class="feeling-strategy">
+                    <h4 class="font-semibold text-md mb-1">${strategy.title}</h4>
+                    <p class="text-sm">${strategy.description}</p>
+                </div>
+            `).join('');
+
+            bodyEl.innerHTML = `
+                <p class="mb-4 text-base">${insight.explanation}</p>
+                <h3 class="font-bold text-lg mb-2">Things you can do:</h3>
+                <div class="space-y-3">${strategiesHTML}</div>
+            `;
+        } else {
+            throw new Error("Invalid insight structure received from API.");
+        }
+    } catch (error) {
+        console.error("Error fetching feeling insight:", error);
+        bodyEl.innerHTML = `<p class="text-center text-red-400">Sorry, I couldn't load insights for this feeling right now. Please try again later.</p>`;
+    }
+    lucide.createIcons();
+}
