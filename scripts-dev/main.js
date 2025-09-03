@@ -1,6 +1,6 @@
 import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
-import { fetchVerseOfTheDayFromGemini, fetchActivityIdeas, handleAskGemini, fetchConversationStarter } from './gemini.js';
-import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown } from './ui.js';
+import { fetchActivityIdeas, askGemini, fetchConversationStarter } from './gemini.js';
+import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
 import { initializeQuoteOfTheDay } from './quote-of-the-day.js';
 
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
-        document.getElementById('next-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex + 1));
+        document.getElementById('next-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex + 1)); 
         document.getElementById('refresh-calendar').addEventListener('click', () => {
             document.getElementById('calendar-iframe').src = document.getElementById('calendar-iframe').src; 
         });
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 geminiModalOverlay.style.display = 'none';
             }
         });
-        document.getElementById('submit-gemini-question').addEventListener('click', handleAskGemini);
+        document.getElementById('submit-gemini-question').addEventListener('click', handleAskGeminiUI);
         document.getElementById('gemini-question-input').addEventListener('keydown', (event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                handleAskGemini();
+                handleAskGeminiUI();
             }
         });
 
@@ -138,8 +138,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function initializeDashboard() {
     await fetchWeather(); // This already triggers activity ideas
-    await scheduleDailyVerseUpdate();
-    await fetchConversationStarter();
+    scheduleDailyVerseUpdate();
+    updateConversationStarter();
+}
+
+async function updateConversationStarter() {
+    const questionEl = document.getElementById('starter-question');
+    const refreshBtn = document.getElementById('refresh-starter');
+    
+    refreshBtn.disabled = true;
+    questionEl.textContent = 'Thinking of a new question...';
+
+    const question = await fetchConversationStarter();
+    
+    questionEl.textContent = question;
+    refreshBtn.disabled = false;
 }
 
 async function scheduleDailyVerseUpdate() {
@@ -147,9 +160,9 @@ async function scheduleDailyVerseUpdate() {
     const midnight = new Date(now);
     midnight.setHours(24, 0, 0, 0); 
     const msUntilMidnight = midnight.getTime() - now.getTime();
-    await fetchVerseOfTheDayFromGemini(); 
+    updateVerseFromLocalList(); 
     setTimeout(() => {
-        setInterval(fetchVerseOfTheDayFromGemini, 24 * 60 * 60 * 1000);
+        setInterval(updateVerseFromLocalList, 24 * 60 * 60 * 1000);
     }, msUntilMidnight);
 }
 
@@ -304,19 +317,29 @@ async function fetchWeather() {
         document.getElementById('weather-loading').classList.add('hidden');
         document.getElementById('weather-content').classList.remove('hidden');
 
+        const weatherContext = `Today's forecast is: ${currentConditions.shortForecast}, with a temperature of ${currentConditions.temperature}°. The high for today will be ${todayForecast.temperature}° and the low will be ${tonightForecast ? tonightForecast.temperature : '--'}°. The chance of rain is ${chanceOfRain}%.`;
+
         // Prepare data for Gemini prompt
         setRawWeatherData({
             current: {
                 temp: currentConditions.temperature,
                 description: currentConditions.shortForecast,
             },
-            forecast: [{
+            forecast: {
                 maxTemp: todayForecast.temperature,
                 minTemp: tonightForecast ? tonightForecast.temperature : todayForecast.temperature,
                 pop: chanceOfRain
-            }]
+            }
         });
-        fetchActivityIdeas();
+
+        const ideas = await fetchActivityIdeas(weatherContext);
+        setActivityIdeas(ideas);
+        if (ideas.length > 0) {
+            renderActivityCarousel();
+        } else {
+            const insightTrack = document.getElementById('gemini-weather-insight-track');
+            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+        }
 
     } catch (error) {
         console.error('Error fetching NWS weather data:', error);
@@ -365,4 +388,37 @@ function initializeGeminiChat() {
         parts: [{ text: "Hi! I'm here to help. You can ask me anything about science, animals, history, or homework." }]
     }]);
     renderChatHistory();
+}
+
+async function handleAskGeminiUI() {
+    const questionInput = document.getElementById('gemini-question-input');
+    const submitButton = document.getElementById('submit-gemini-question');
+    
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    // Add user message to history and render
+    setGeminiChatHistory([...getGeminiChatHistory(), { role: 'user', parts: [{ text: question }] }]);
+    renderChatHistory();
+    questionInput.value = ''; // Clear input
+
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<div class="spinner w-5 h-5"></div>';
+
+    // Add a thinking indicator
+    const answerContainer = document.getElementById('gemini-answer-container');
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.className = 'chat-message model-message';
+    thinkingDiv.innerHTML = '<div class="spinner w-5 h-5"></div>';
+    answerContainer.appendChild(thinkingDiv);
+    thinkingDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const answer = await askGemini(getGeminiChatHistory(), question);
+
+    setGeminiChatHistory([...getGeminiChatHistory(), { role: 'model', parts: [{ text: answer }] }]);
+    renderChatHistory();
+
+    submitButton.disabled = false;
+    submitButton.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i>';
+    lucide.createIcons();
 }

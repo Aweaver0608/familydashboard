@@ -159,6 +159,41 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     }
 }
 
+export async function fetchActivityIdeas(weatherContext) {
+    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+    
+    try {
+        const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], "gemini-1.5-flash-preview-0514", activitySchema);
+        return parsedJson.activities || [];
+    } catch (error) {
+        console.error("Error calling Gemini API for weather:", error);
+        return [];
+    }
+}
+
+export async function fetchConversationStarter() {
+    let questionHistory = [];
+    try {
+        questionHistory = JSON.parse(localStorage.getItem('questionHistory') || '[]');
+    } catch (e) {
+        questionHistory = [];
+    }
+
+    const exclusionPrompt = questionHistory.length > 0 ? `Please do not ask a question similar to these recent ones: "${questionHistory.join('", "')}"` : "";
+    const prompt = `Generate a single, fun, and thought-provoking conversation starter question suitable for a family with children of various ages (8-17). The question should be open-ended and encourage imagination or sharing personal stories. Do not include any introductory text, just the question itself. ${exclusionPrompt}`;
+
+    try {
+        const question = await callGemini([{ parts: [{ text: prompt }] }]);
+        questionHistory.push(question);
+        if (questionHistory.length > 10) { questionHistory.shift(); }
+        localStorage.setItem('questionHistory', JSON.stringify(questionHistory));
+        return question;
+    } catch (error) {
+        console.error("Error fetching conversation starter:", error);
+        return 'What is your favorite family memory?'; // Fallback question
+    }
+}
+
 export async function fetchVerseInsights(verseToAnalyze) {
     const track = document.getElementById('gemini-verse-insight-track');
     if (track) track.innerHTML = `<div class="carousel-slide flex items-center justify-center w-full h-full"><div class="spinner"></div><span class="ml-2">Loading...</span></div>`;
@@ -193,9 +228,33 @@ Ensure the entire output is a single, valid JSON object.`;
     }
 }
 
-// This is just a placeholder. The real implementation is in the main file.
-export async function fetchVerseOfTheDayFromGemini() { console.log("fetchVerseOfTheDayFromGemini called"); }
-export async function fetchActivityIdeas() { console.log("fetchActivityIdeas called"); }
-export async function handleAskGemini() { console.log("handleAskGemini called"); }
-export async function fetchConversationStarter() { console.log("fetchConversationStarter called"); }
+export async function askGemini(chatHistory, question) {
+    const conversationToSend = JSON.parse(JSON.stringify(chatHistory));
+    conversationToSend.push({ role: 'user', parts: [{ text: question }] });
+
+    const safetyPrompt = `
+          You are a friendly, patient, and knowledgeable AI assistant for children.
+          A child has asked the following question: "${question}"
+          
+          Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 8-13) to understand. Use analogies and simple examples where possible.
+          
+          IMPORTANT SAFETY RULES:
+          - You MUST NOT answer questions about or use language related to violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, or any other mature or inappropriate themes.
+          - If the user's question touches on any of these forbidden topics, you MUST refuse to answer directly. Instead, respond with a gentle and friendly refusal like: "That's a very grown-up question! I'm here to help with topics like science, animals, history, and homework. How about we talk about something else, like why dinosaurs are so cool?" and encourage the child to speak to their parents about that topic.
+          - Keep your answers positive and encouraging.
+    `;
+
+    if (conversationToSend.filter(m => m.role === 'user').length === 1) {
+        conversationToSend[conversationToSend.length - 1].parts[0].text = safetyPrompt;
+    }
+
+    try {
+        const answer = await callGemini(conversationToSend);
+        return answer;
+    } catch (error) {
+        console.error("Error asking Gemini:", error);
+        return "Sorry, I had trouble thinking of an answer. Please try again!";
+    }
+}
+
 export async function showFeelingResponse() { console.log("showFeelingResponse called"); }

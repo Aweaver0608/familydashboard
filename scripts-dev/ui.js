@@ -161,8 +161,8 @@ export function showActivityIdea(index) {
     setCurrentIdeaIndex(index);
     track.style.transform = `translateX(-${getCurrentIdeaIndex() * 100}%)`;
     counter.textContent = `${getCurrentIdeaIndex() + 1} / ${getActivityIdeas().length}`;
-    prevButton.disabled = getCurrentVerseInsightIndex() === 0;
-    nextButton.disabled = getCurrentVerseInsightIndex() >= getVerseInsights().length - 1;
+    prevButton.disabled = getCurrentIdeaIndex() === 0;
+    nextButton.disabled = getCurrentIdeaIndex() >= getActivityIdeas().length - 1;
 }
 
 export function renderChatHistory() {
