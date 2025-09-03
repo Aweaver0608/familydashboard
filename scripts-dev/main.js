@@ -2,7 +2,7 @@ import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } fro
 import { fetchActivityIdeas, askGemini, fetchConversationStarter } from './gemini.js';
 import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
-import { initializeQuoteOfTheDay } from './quote-of-the-day.js';
+import { initializeQuoteOfTheDay } from '././quote-of-the-day.js';
 
 import { WEATHER_CITY_DETAILS, FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 
@@ -72,15 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-<<<<<<< HEAD
         document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
-=======
-
-        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
-
-        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
-
->>>>>>> b1d475fbd2fe61976dda2797d16d1c9739403463
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
@@ -333,11 +325,11 @@ async function fetchWeather() {
             dayWrapper.innerHTML = `
                 <p class="day-name" style="font-size:1.25rem; font-weight:700; margin-bottom:-0.75rem;">${dayName}</p>
                 <div class="flex flex-col items-center justify-center">
-                    <img class="w-12 h-12 my-1" src="${data.icon}" alt="Daily forecast icon">
+                    <img class="w-12 h-12 my-1" src="${getWeatherIcon(hour.shortForecast, hour.isDaytime)}" alt="Hourly forecast icon">
                     <span style="font-size:1rem; font-weight:700; margin-top:-0.5rem; line-height:1;">${data.high}°/${lowDisplay}°</span>
                 </div>
                 <div class="flex items-center gap-1 text-xs">
-                    <img class="w-5 h-5" src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" alt="Umbrella icon">
+                    <img class="w-5 h-5" src="https://raw.githubusercontent.com/basmilius/weather-icons/master/design/fill/animation-ready/umbrella.svg" class="w-5 h-5" alt="Umbrella icon">
                     <span>${data.pop}%</span>
                 </div>`;
             forecastContainerEl.appendChild(dayWrapper);
