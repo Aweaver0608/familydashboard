@@ -184,6 +184,8 @@ export function initializeFeelingsWheel() {
     const modalOverlay = document.getElementById('feelings-modal-overlay');
     const openBtn = document.getElementById('mood-tracker-btn');
     const closeBtn = document.getElementById('close-feelings-modal');
+    const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
     const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
     const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn'); // Get reference here
     
@@ -207,6 +209,20 @@ export function initializeFeelingsWheel() {
         submitPinEntryBtn.addEventListener('click', handlePinSubmit);
         closePinEntryModalBtn.addEventListener('click', () => {
             pinEntryModalOverlay.style.display = 'none';
+        });
+
+        // Add event listener for 'Enter' key on PIN inputs
+        pinEntryInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handlePinSubmit();
+            }
+        });
+        pinConfirmInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handlePinSubmit();
+            }
         });
     }
     updateOverallMoodIcon();
