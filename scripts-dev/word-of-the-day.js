@@ -1,5 +1,5 @@
 import { MERRIAM_WEBSTER_COLLEGIATE_API_KEY, MERRIAM_WEBSTER_THESAURUS_API_KEY } from '../config.js';
-import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord, fetchDidYouKnowFactForWord, fetchDistractorDefinitionsForWord } from '../scripts/gemini.js'; // Import the new function
+import { fetchAgeAppropriateWordFromGemini, fetchGeminiSentencesForWord, fetchDidYouKnowFactForWord, fetchDistractorDefinitionsForWord } from './gemini.js'; // Import the new function
 
 const DICTIONARY_API_URL = "https://www.dictionaryapi.com/api/v3/references/collegiate/json/";
 const THESAURUS_API_URL = "https://www.dictionaryapi.com/api/v3/references/ithesaurus/json/";
