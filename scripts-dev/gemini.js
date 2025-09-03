@@ -146,8 +146,16 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
 
     const prompt = `
         For the word "${word}", the correct definition is: "${correctDefinition}".
-        Please generate a JSON object containing an array of 2 plausible but incorrect definitions for this word that could be used as distractors in a multiple-choice quiz for a child (ages 8-13).
-        The incorrect definitions should be for words that sound similar, have a related theme, or are common misconceptions. They must be different from the correct definition.
+
+        I need you to generate 2 plausible but incorrect definitions for this word. These will be used as distractors in a multiple-choice quiz for a child (ages 8-13).
+
+        Here are the requirements for the distractors:
+        1.  **Plausible:** They should sound like real definitions.
+        2.  **Incorrect:** They must not be a correct definition of the word.
+        3.  **Creative:** Think about words that sound similar, have related themes, or are common misconceptions. For example, for "serendipity", a distractor could be related to "serenity" (calmness) or sound scientific.
+        4.  **Distinct:** The distractors must be clearly different from the correct definition.
+
+        Return a JSON object with a "distractors" key containing an array of the 2 incorrect definition strings.
     `;
 
     try {
