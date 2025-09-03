@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let currentQuizStep = null;
+    let currentVerseQuestionIndex = 0;
+    let verseAnswers = {};
 
     function getVerseInsights() {
         try {
@@ -85,6 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             author: quoteAuthor
                         });
                         document.getElementById('quote-banner').classList.remove('pulse');
+                        currentVerseQuestionIndex = 0; // Reset for the verse step
+                        verseAnswers = {}; // Reset for the verse step
                         currentQuizStep = QUIZ_STEPS.VERSE_OF_THE_DAY_STEP;
                         updateDailyChallengeDialog();
                     } else {
@@ -98,48 +102,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 const verseInsights = getVerseInsights();
                 const applicationQuestions = verseInsights?.devotional?.application_questions || [];
 
-                let questionsHtml = '';
-                if (applicationQuestions.length > 0) {
-                    questionsHtml = '<p class="text-lg font-semibold mb-4">Think About It:</p>';
-                    applicationQuestions.forEach((q, index) => {
-                        questionsHtml += `
-                            <p class="mb-2">${index + 1}. ${q}</p>
-                            <textarea id="verse-question-${index}-input" class="form-input w-full h-20 mb-4" placeholder="Your answer..."></textarea>
-                        `;
-                    });
-                    dailyChallengeContent.innerHTML = questionsHtml;
-                    dailyChallengeFooter.innerHTML = `<button id="submit-verse-answers-btn" class="gemini-btn">Submit Answers</button>`;
-                    dailyChallengeFooter.querySelector('#submit-verse-answers-btn').addEventListener('click', () => {
-                        const answers = {};
-                        let allAnswered = true;
-                        applicationQuestions.forEach((q, index) => {
-                            const answerInput = document.getElementById(`verse-question-${index}-input`);
-                            const answer = answerInput.value.trim();
-                            if (answer) {
-                                answers[q] = answer;
-                            } else {
-                                allAnswered = false;
-                            }
-                        });
+                if (applicationQuestions.length > 0 && currentVerseQuestionIndex < applicationQuestions.length) {
+                    const currentQuestion = applicationQuestions[currentVerseQuestionIndex];
+                    dailyChallengeContent.innerHTML = `
+                        <p class="text-lg font-semibold mb-4">Think About It (${currentVerseQuestionIndex + 1}/${applicationQuestions.length}):</p>
+                        <p class="mb-2">${currentQuestion}</p>
+                        <textarea id="verse-question-input" class="form-input w-full h-20 mb-4" placeholder="Your answer..."></textarea>
+                    `;
 
-                        if (allAnswered) {
-                            addDailyChallengeEntry({
-                                type: 'verseAnswers',
-                                verse: document.getElementById('verse-text').textContent,
-                                reference: document.getElementById('verse-reference').textContent,
-                                answers: answers
-                            });
-                            verseWidget.classList.remove('pulse');
-                            currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
-                            updateDailyChallengeDialog();
+                    const isLastQuestion = currentVerseQuestionIndex === applicationQuestions.length - 1;
+                    const buttonText = isLastQuestion ? "Submit Final Answer" : "Next Question";
+                    
+                    dailyChallengeFooter.innerHTML = `<button id="submit-verse-answer-btn" class="gemini-btn">${buttonText}</button>`;
+                    dailyChallengeFooter.querySelector('#submit-verse-answer-btn').addEventListener('click', () => {
+                        const answerInput = document.getElementById('verse-question-input');
+                        const answer = answerInput.value.trim();
+
+                        if (answer) {
+                            verseAnswers[currentQuestion] = answer;
+                            currentVerseQuestionIndex++;
+                            
+                            if (currentVerseQuestionIndex >= applicationQuestions.length) {
+                                // All questions answered, submit and move on
+                                addDailyChallengeEntry({
+                                    type: 'verseAnswers',
+                                    verse: document.getElementById('verse-text').textContent,
+                                    reference: document.getElementById('verse-reference').textContent,
+                                    answers: verseAnswers
+                                });
+                                verseWidget.classList.remove('pulse');
+                                currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
+                            }
+                            updateDailyChallengeDialog(); // Re-render for next question or next step
                         } else {
-                            alert("Please answer all questions before submitting.");
+                            alert("Please provide an answer.");
                         }
                     });
                 } else {
-                    dailyChallengeContent.innerHTML = `<p>No "Think About It" questions available for today's verse. Skipping this step.</p>`;
-                    dailyChallengeFooter.innerHTML = `<button id="skip-verse-btn" class="gemini-btn">Continue</button>`;
-                    dailyChallengeFooter.querySelector('#skip-verse-btn').addEventListener('click', () => {
+                    // This block handles either no questions or finishing the questions
+                    verseWidget.classList.remove('pulse');
+                    dailyChallengeContent.innerHTML = `<p>Verse reflection complete. Moving to the next step.</p>`;
+                    dailyChallengeFooter.innerHTML = `<button id="continue-verse-btn" class="gemini-btn">Continue</button>`;
+                    dailyChallengeFooter.querySelector('#continue-verse-btn').addEventListener('click', () => {
                         verseWidget.classList.remove('pulse');
                         currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
                         updateDailyChallengeDialog();
