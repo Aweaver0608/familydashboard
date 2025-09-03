@@ -415,7 +415,7 @@ function displayFeelingsWheelContent(name) {
 }
 
 
-function handleFeelingSelection(event) {
+async function handleFeelingSelection(event) {
     const { core, feeling } = event.currentTarget.dataset;
     const familyFeelings = getFamilyFeelings();
 
@@ -427,9 +427,9 @@ function handleFeelingSelection(event) {
     saveFamilyFeelings(familyFeelings);
     
     updateOverallMoodIcon();
-    showFeelingResponse(feeling, core);
+    await showFeelingResponse(feeling, core);
 
-    closeAndResetFeelingsModal();
+    closeAndResetFeelingsModal(); // This will now correctly wait until the insight modal is shown.
     // Dispatch custom event for daily challenge integration
     document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
         detail: { feeling, core }
