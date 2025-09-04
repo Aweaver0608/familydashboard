@@ -39,11 +39,15 @@ export function setGeminiChatHistory(history) { geminiChatHistory = history; }
 
 export async function refreshActivityIdeas() {
     const refreshButton = document.getElementById('refresh-ideas');
+    const insightTrack = document.getElementById('gemini-weather-insight-track');
     const originalButtonContent = refreshButton.innerHTML; // Store original content
 
     refreshButton.disabled = true;
     refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div> Refreshing...'; // Show spinner and text
     lucide.createIcons(); // Re-render icons if any
+
+    // Display loading indicator in the insight track area
+    insightTrack.innerHTML = `<div class="carousel-slide text-center flex items-center justify-center"><div class="spinner w-5 h-5 mr-2"></div> Loading new ideas...</div>`;
 
     try {
         if (!currentWeatherContext) {
@@ -51,8 +55,7 @@ export async function refreshActivityIdeas() {
             await fetchWeather(); // Re-fetch weather to get context
             if (!currentWeatherContext) {
                 console.error("Still no weather context after re-fetch. Cannot refresh activity ideas.");
-                const insightTrack = document.getElementById('gemini-weather-insight-track');
-                if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
+                insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
                 return; // Exit early if no context
             }
         }
@@ -60,10 +63,9 @@ export async function refreshActivityIdeas() {
         const ideas = await fetchActivityIdeas(currentWeatherContext);
         setActivityIdeas(ideas);
         if (ideas.length > 0) {
-            renderActivityCarousel();
+            renderActivityCarousel(); // This will re-render the carousel with new ideas
         } else {
-            const insightTrack = document.getElementById('gemini-weather-insight-track');
-            if (insightTrack) insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+            insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
         }
     } finally {
         refreshButton.disabled = false;

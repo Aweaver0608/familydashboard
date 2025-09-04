@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
     
-        document.getElementById('refresh-ideas').addEventListener('click', fetchActivityIdeas);
+        document.getElementById('refresh-ideas').addEventListener('click', updateActivityIdeas);
         document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
         document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
         document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
@@ -161,6 +161,43 @@ async function updateConversationStarter() {
     } finally {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = originalButtonContent; // Restore original button content
+        lucide.createIcons(); // Re-render icons if any
+    }
+}
+
+async function updateActivityIdeas() {
+    const refreshButton = document.getElementById('refresh-ideas');
+    const insightTrack = document.getElementById('gemini-weather-insight-track');
+    const originalButtonContent = refreshButton.innerHTML; // Store original content
+
+    refreshButton.disabled = true;
+    refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div> Refreshing...'; // Show spinner and text
+    lucide.createIcons(); // Re-render icons if any
+
+    // Display loading indicator in the insight track area
+    insightTrack.innerHTML = `<div class="carousel-slide text-center flex items-center justify-center"><div class="spinner w-5 h-5 mr-2"></div> Loading new ideas...</div>`;
+
+    try {
+        if (!currentWeatherContext) {
+            console.warn("No weather context available to refresh activity ideas. Attempting to fetch weather.");
+            await fetchWeather(); // Re-fetch weather to get context
+            if (!currentWeatherContext) {
+                console.error("Still no weather context after re-fetch. Cannot refresh activity ideas.");
+                insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now. Weather data unavailable.</p></div>`;
+                return; // Exit early if no context
+            }
+        }
+
+        const ideas = await fetchActivityIdeas(currentWeatherContext);
+        setActivityIdeas(ideas);
+        if (ideas.length > 0) {
+            renderActivityCarousel(); // This will re-render the carousel with new ideas
+        } else {
+            insightTrack.innerHTML = `<div class="carousel-slide text-center"><p>Sorry, couldn't get ideas right now.</p></div>`;
+        }
+    } finally {
+        refreshButton.disabled = false;
+        refreshButton.innerHTML = originalButtonContent; // Restore original content
         lucide.createIcons(); // Re-render icons if any
     }
 }
