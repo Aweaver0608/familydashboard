@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('refresh-calendar').addEventListener('click', () => {
             document.getElementById('calendar-iframe').src = document.getElementById('calendar-iframe').src; 
         });
-        document.getElementById('refresh-starter').addEventListener('click', fetchConversationStarter);
+        document.getElementById('refresh-starter').addEventListener('click', updateConversationStarter);
 
         // --- Modal Listeners ---
         const geminiModalOverlay = document.getElementById('gemini-modal-overlay');
@@ -139,7 +139,30 @@ document.addEventListener('DOMContentLoaded', function() {
 async function initializeDashboard() {
     await fetchWeather(); // This already triggers activity ideas
     await scheduleDailyVerseUpdate();
-    await fetchConversationStarter();
+    // Initial fetch of conversation starter with loading indicator
+    updateConversationStarter(); // Call the unified function
+}
+
+async function updateConversationStarter() {
+    const questionEl = document.getElementById('starter-question');
+    const refreshBtn = document.getElementById('refresh-starter');
+    const originalQuestionContent = questionEl.innerHTML; // Store original content of question element
+    const originalButtonContent = refreshBtn.innerHTML; // Store original content of button
+
+    refreshBtn.disabled = true;
+    questionEl.innerHTML = '<div class="flex items-center justify-center"><div class="spinner w-5 h-5 mr-2"></div> Loading new question...</div>'; // Show spinner and text in question area
+
+    try {
+        const question = await fetchConversationStarter();
+        questionEl.textContent = question;
+    } catch (error) {
+        console.error("Error fetching conversation starter:", error);
+        questionEl.textContent = 'Failed to load question. Please try again.'; // Fallback message
+    } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = originalButtonContent; // Restore original button content
+        lucide.createIcons(); // Re-render icons if any
+    }
 }
 
 async function scheduleDailyVerseUpdate() {
