@@ -192,7 +192,6 @@ export function initializeFeelingsWheel() {
     openBtn.addEventListener('click', () => {
         showNameSelection();
         modalOverlay.style.display = 'flex';
-        lucide.createIcons();
     });
 
     closeBtn.addEventListener('click', closeAndResetFeelingsModal);
@@ -282,6 +281,8 @@ async function showNameSelection() {
         button.addEventListener('click', () => showPinEntryForFeelingSelection(name));
         nameView.appendChild(button);
     }
+    lucide.createIcons(); // Moved here
+}
 }
 
 // New top-level function for handling PIN submission
