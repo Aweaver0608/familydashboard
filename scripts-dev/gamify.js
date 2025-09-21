@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const storedData = localStorage.getItem('verseData');
             if (storedData) {
-                return JSON.parse(storedData).insights;
+                return JSON.parse(storedData);
             }
         } catch (e) {
             console.error("Error reading verse insights from localStorage:", e);
@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="mb-2">${currentQuestion}</p>
                         <textarea id="verse-question-input" class="form-input w-full h-20 mb-4" placeholder="Your answer..."></textarea>
                         <p id="verse-feedback-message" class="text-red-400 text-sm mt-2 hidden"></p>
+                        <button id="open-verse-devotional-btn" class="gemini-btn mt-4">View Verse Details</button>
                     `;
 
                     const isLastQuestion = currentVerseQuestionIndex === applicationQuestions.length - 1;
@@ -146,6 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             feedbackMessage.textContent = "Please provide an answer.";
                             feedbackMessage.classList.remove('hidden');
                         }
+                    });
+
+                    // Add event listener for the new button
+                    dailyChallengeContent.querySelector('#open-verse-devotional-btn').addEventListener('click', () => {
+                        document.getElementById('verse-devotional-modal-overlay').style.display = 'flex';
                     });
                 } else {
                     // This block handles either no questions or finishing the questions
