@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dailyChallengeFooter.querySelector('#submit-reflection-btn').addEventListener('click', () => {
                     const reflection = document.getElementById('quote-reflection-input').value.trim();
                     if (reflection) {
-                        addDailyChallengeEntry({
+                        addDailyChallengeEntry(getSelectedPersonForMood(), {
                             type: 'quoteReflection',
                             reflection: reflection,
                             quote: quoteText,
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             if (currentVerseQuestionIndex >= applicationQuestions.length) {
                                 // All questions answered, submit and move on
-                                addDailyChallengeEntry({
+                                addDailyChallengeEntry(getSelectedPersonForMood(), {
                                     type: 'verseAnswers',
                                     verse: document.getElementById('verse-text').textContent,
                                     reference: document.getElementById('verse-reference').textContent,
@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (isCorrect) {
                                 selectedOption.classList.add('correct');
                                 feedbackMessage.classList.add('hidden');
-                                addDailyChallengeEntry({
+                                addDailyChallengeEntry(getSelectedPersonForMood(), {
                                     type: 'wordAnswer',
                                     word: wordData.word,
                                     correctDefinition: correctDefinition,
@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 selectedOption.classList.add('incorrect');
                                 feedbackMessage.textContent = "Not quite. The correct answer is highlighted in green.";
                                 feedbackMessage.classList.remove('hidden');
-                                addDailyChallengeEntry({
+                                addDailyChallengeEntry(getSelectedPersonForMood(), {
                                     type: 'wordAnswer',
                                     word: wordData.word,
                                     correctDefinition: correctDefinition,

@@ -212,9 +212,10 @@ export async function setPin(name, pin) {
     }
 }
 
-export async function addDailyChallengeEntry(data) {
+export async function addDailyChallengeEntry(personName, data) {
     try {
         await addDoc(collection(db, "dailyChallenges"), {
+            name: personName,
             ...data,
             timestamp: serverTimestamp()
         });
