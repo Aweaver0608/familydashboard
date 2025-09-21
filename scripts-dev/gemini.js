@@ -228,6 +228,7 @@ Ensure the entire output is a single, valid JSON object.`;
 
     try {
         const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], undefined, verseInsightSchema);
+        localStorage.setItem('verseData', JSON.stringify(insights));
         return insights;
     } catch (error) {
         console.error("Failed to fetch consolidated insights:", error);
