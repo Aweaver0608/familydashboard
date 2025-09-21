@@ -43,7 +43,7 @@ export async function refreshActivityIdeas() {
     const originalButtonContent = refreshButton.innerHTML; // Store original content
 
     refreshButton.disabled = true;
-    refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div> Refreshing...'; // Show spinner and text
+    refreshButton.innerHTML = '<div class="spinner w-5 h-5"></div>'; // Show spinner only
     lucide.createIcons(); // Re-render icons if any
 
     // Display loading indicator in the insight track area

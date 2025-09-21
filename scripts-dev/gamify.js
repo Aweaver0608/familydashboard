@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add event listener for the close button
         dailyChallengeHeader.querySelector('#close-daily-challenge-modal').addEventListener('click', () => {
             dailyChallengeModalOverlay.style.display = 'none'; // Hide the overlay
-            moodTrackerBtn.classList.remove('highlight-active');
+            moodTrackerBtn.classList.remove('highlight-active-gold');
             currentQuizStep = null; // Reset quiz state when closing
         });
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP:
                 const quoteText = document.getElementById('quote-text').textContent;
                 const quoteAuthor = document.getElementById('quote-author').textContent;
-                document.getElementById('quote-banner').classList.add('highlight-active');
+                document.getElementById('quote-banner').classList.add('highlight-active-gold');
                 dailyChallengeContent.innerHTML = `
                     <p class="text-lg font-semibold mb-4">Today's Quote:</p>
                     <blockquote class="text-xl italic text-center mb-6">${quoteText} ${quoteAuthor}</blockquote>
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             quote: quoteText,
                             author: quoteAuthor
                         });
-                        document.getElementById('quote-banner').classList.remove('highlight-active');
+                        document.getElementById('quote-banner').classList.remove('highlight-active-gold');
                         currentVerseQuestionIndex = 0; // Reset for the verse step
                         verseAnswers = {}; // Reset for the verse step
                         currentQuizStep = QUIZ_STEPS.VERSE_OF_THE_DAY_STEP;
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case QUIZ_STEPS.VERSE_OF_THE_DAY_STEP:
                 const verseWidget = document.getElementById('verse');
-                verseWidget.classList.add('highlight-active');
+                verseWidget.classList.add('highlight-active-gold');
                 const verseInsights = getVerseInsights();
                 const applicationQuestions = verseInsights?.devotional?.application_questions || [];
 
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     reference: document.getElementById('verse-reference').textContent,
                                     answers: verseAnswers
                                 });
-                                verseWidget.classList.remove('highlight-active');
+                                verseWidget.classList.remove('highlight-active-gold');
                                 currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
                             }
                             updateDailyChallengeDialog(); // Re-render for next question or next step
@@ -149,11 +149,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 } else {
                     // This block handles either no questions or finishing the questions
-                    verseWidget.classList.remove('highlight-active');
+                    verseWidget.classList.remove('highlight-active-gold');
                     dailyChallengeContent.innerHTML = `<p>Verse reflection complete. Moving to the next step.</p>`;
                     dailyChallengeFooter.innerHTML = `<button id="continue-verse-btn" class="gemini-btn">Continue</button>`;
                     dailyChallengeFooter.querySelector('#continue-verse-btn').addEventListener('click', () => {
-                        verseWidget.classList.remove('highlight-active');
+                        verseWidget.classList.remove('highlight-active-gold');
                         currentQuizStep = QUIZ_STEPS.WORD_OF_THE_DAY_STEP;
                         updateDailyChallengeDialog();
                     });
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case QUIZ_STEPS.WORD_OF_THE_DAY_STEP:
                 const wordOfTheDayBtn = document.getElementById('word-of-the-day-btn');
-                wordOfTheDayBtn.classList.add('highlight-active');
+                wordOfTheDayBtn.classList.add('highlight-active-gold');
                 const wordData = getCachedWordData();
 
                 if (wordData && wordData.definitions && wordData.definitions.length > 0) {
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
                                 // Move to next step after a short delay
                                 setTimeout(() => {
-                                    wordOfTheDayBtn.classList.remove('highlight-active');
+                                    wordOfTheDayBtn.classList.remove('highlight-active-gold');
                                     currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                                     updateDailyChallengeDialog();
                                 }, 1500);
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 // Show a continue button
                                 dailyChallengeFooter.innerHTML = `<button id="continue-word-quiz-btn" class="gemini-btn">Continue</button>`;
                                 dailyChallengeFooter.querySelector('#continue-word-quiz-btn').addEventListener('click', () => {
-                                    wordOfTheDayBtn.classList.remove('highlight-active');
+                                    wordOfTheDayBtn.classList.remove('highlight-active-gold');
                                     currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                                     updateDailyChallengeDialog();
                                 });
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dailyChallengeContent.innerHTML = `<p>Word of the Day data not available. Skipping this step.</p>`;
                     dailyChallengeFooter.innerHTML = `<button id="skip-word-btn" class="gemini-btn">Continue</button>`;
                     dailyChallengeFooter.querySelector('#skip-word-btn').addEventListener('click', () => {
-                        wordOfTheDayBtn.classList.remove('highlight-active');
+                        wordOfTheDayBtn.classList.remove('highlight-active-gold');
                         currentQuizStep = QUIZ_STEPS.PRAYER_LIST_STEP;
                         updateDailyChallengeDialog();
                     });
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case QUIZ_STEPS.PRAYER_LIST_STEP:
                 const openPrayerModalBtn = document.getElementById('open-prayer-modal');
-                openPrayerModalBtn.classList.add('highlight-active');
+                openPrayerModalBtn.classList.add('highlight-active-gold');
                 dailyChallengeContent.innerHTML = `
                     <p class="text-lg font-semibold mb-4">Great job! Now, let's encourage our family.</p>
                     <p class="mb-4">Please review the prayer requests and pray for them.</p>
@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     openPrayerModalBtn.click();
                 });
                 dailyChallengeFooter.querySelector('#i-have-prayed-btn').addEventListener('click', () => {
-                    openPrayerModalBtn.classList.remove('highlight-active');
+                    openPrayerModalBtn.classList.remove('highlight-active-gold');
                     currentQuizStep = QUIZ_STEPS.QUIZ_COMPLETE_STEP;
                     updateDailyChallengeDialog();
                     triggerConfetti();
@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function startDailyChallenge() {
         dailyChallengeModalOverlay.style.display = 'flex'; // Show the overlay
-        moodTrackerBtn.classList.add('highlight-active');
+        moodTrackerBtn.classList.add('highlight-active-gold');
         currentQuizStep = QUIZ_STEPS.FEELINGS_WHEEL_STEP;
         updateDailyChallengeDialog();
     }
@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     if (feelingsModalOverlay.style.display === 'flex') {
-                        moodTrackerBtn.classList.remove('highlight-active'); // Remove highlight when modal opens
+                        moodTrackerBtn.classList.remove('highlight-active-gold'); // Remove highlight when modal opens
                     }
                 }
             }
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Listen for dailyChallengeFeelingSelected event
         document.addEventListener('dailyChallengeFeelingSelected', async (event) => {
             if (dailyChallengeModalOverlay.style.display === 'flex') { // Only proceed if daily challenge is active
-                moodTrackerBtn.classList.remove('highlight-active');
+                moodTrackerBtn.classList.remove('highlight-active-gold');
                 currentQuizStep = QUIZ_STEPS.QUOTE_OF_THE_DAY_STEP; // Directly proceed to Quote of the Day
                 await updateDailyChallengeDialog();
             }
