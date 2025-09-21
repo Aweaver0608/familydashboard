@@ -283,7 +283,6 @@ async function showNameSelection() {
     }
     lucide.createIcons(); // Moved here
 }
-}
 
 // New top-level function for handling PIN submission
 async function handlePinSubmit() {
