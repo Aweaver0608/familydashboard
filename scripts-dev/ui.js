@@ -1,6 +1,6 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
-import { setCurrentPrayerDocId, getPin, setPin } from './firebase.js';
+import { setCurrentPrayerDocId, getPin, setPin, hasCompletedDailyChallenge } from './firebase.js';
 import { showFeelingResponse, fetchVerseInsights } from './gemini.js';
 
 let allPrayers = [];
@@ -246,7 +246,7 @@ function saveFamilyFeelings(feelings) {
     localStorage.setItem('familyFeelings', JSON.stringify(feelings));
 }
 
-function showNameSelection() {
+async function showNameSelection() {
     const nameView = document.getElementById('name-selection-view');
     const wheelView = document.getElementById('wheel-view');
     const title = document.getElementById('feelings-modal-title');
@@ -259,7 +259,7 @@ function showNameSelection() {
 
     const familyFeelings = getFamilyFeelings();
 
-    FAMILY_MEMBERS.forEach(name => {
+    for (const name of FAMILY_MEMBERS) { // Use for...of for async/await
         const personData = familyFeelings[name];
         const button = document.createElement('button');
         button.className = 'name-btn';
@@ -271,13 +271,17 @@ function showNameSelection() {
             lastFeelingHTML = `<span class="text-sm">${personData.feeling} <span class="text-xs text-white/50">(${lastUpdated})</span></span>`;
         }
 
+        // Check if the person completed the daily challenge
+        const hasCompleted = await hasCompletedDailyChallenge(name);
+        const goldStarHTML = hasCompleted ? '<i data-lucide="star" class="w-4 h-4 text-yellow-400 ml-2"></i>' : '';
+
         button.innerHTML = `<div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg">${name}</span>
+                                        <span class="font-bold text-lg">${name}${goldStarHTML}</span>
                                         ${lastFeelingHTML}
                                     </div>`;
         button.addEventListener('click', () => showPinEntryForFeelingSelection(name));
         nameView.appendChild(button);
-    });
+    }
 }
 
 // New top-level function for handling PIN submission

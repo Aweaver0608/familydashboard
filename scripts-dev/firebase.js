@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { FAMILY_MEMBERS } from '../config.js';
 import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 
@@ -221,5 +221,27 @@ export async function addDailyChallengeEntry(data) {
         console.log("Daily challenge entry added successfully!");
     } catch (e) {
         console.error("Error adding daily challenge entry: ", e);
+    }
+}
+
+export async function hasCompletedDailyChallenge(personName) {
+    try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const q = query(
+            collection(db, "dailyChallenges"),
+            where("name", "==", personName),
+            where("timestamp", ">=", startOfDay),
+            where("timestamp", "<=", endOfDay)
+        );
+
+        const querySnapshot = await getDocs(q);
+        return !querySnapshot.empty;
+    } catch (e) {
+        console.error("Error checking daily challenge completion:", e);
+        return false;
     }
 }
