@@ -1,9 +1,11 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
 import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
-import { setCurrentPrayerDocId } from './firebase.js';
-import { showFeelingResponse, generateAndDisplayVerseInsights } from './gemini.js';
+import { setCurrentPrayerDocId, getPin, setPin, hasCompletedDailyChallenge } from './firebase.js';
+import { showFeelingResponse, fetchVerseInsights } from './gemini.js';
 
 let allPrayers = [];
+let currentPinEntryPerson = null;
+let isPinCreateMode = false; // New global variable // To store the name of the person for PIN entry
 
 export function updateTime() {
     const now = new Date();
@@ -37,11 +39,16 @@ export async function updateStaticBackground(weatherDescription) {
 export function updateVerseFromLocalList() { 
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-    setCurrentVerse(NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length]);
-    
-    document.getElementById('verse-text').textContent = getCurrentVerse().text;
-    document.getElementById('verse-reference').textContent = getCurrentVerse().reference;
-    generateAndDisplayVerseInsights(getCurrentVerse());
+    const verse = NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length];
+    setCurrentVerse(verse);
+
+    document.getElementById('verse-text').textContent = verse.text;
+    document.getElementById('verse-reference').textContent = verse.reference;
+    fetchVerseInsights(verse).then(insights => {
+        if (insights) {
+            renderVerseCarousel(insights);
+        }
+    });
 }
 
 export function renderVerseCarousel(insights) {
@@ -63,7 +70,7 @@ export function renderVerseCarousel(insights) {
                 <p class="text-base mb-4 italic">"${dev.big_idea}"</p>
                 <h5 class="font-semibold text-lg mb-2">Think About It</h5>
                 <div class="text-base mb-4">${(dev.application_questions || []).map(q => `• ${q}`).join('<br>')}
-/div>
+</div>
                 <h5 class="font-semibold text-lg mb-2">Prayer</h5>
                 <p class="text-base mb-4">${dev.prayer}</p>
             </div>
@@ -155,7 +162,7 @@ export function showActivityIdea(index) {
     track.style.transform = `translateX(-${getCurrentIdeaIndex() * 100}%)`;
     counter.textContent = `${getCurrentIdeaIndex() + 1} / ${getActivityIdeas().length}`;
     prevButton.disabled = getCurrentIdeaIndex() === 0;
-    nextButton.disabled = getCurrentIdeaIndex() === getActivityIdeas().length - 1;
+    nextButton.disabled = getCurrentIdeaIndex() >= getActivityIdeas().length - 1;
 }
 
 export function renderChatHistory() {
@@ -164,7 +171,7 @@ export function renderChatHistory() {
     getGeminiChatHistory().forEach(message => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chat-message ${message.role === 'user' ? 'user-message' : 'model-message'}`;
-        messageDiv.innerHTML = `<p>${message.parts[0].text.replace(/\n/g, '<br>')}</p>`;
+        messageDiv.innerHTML = `<p>${marked.parse(message.parts[0].text)}</p>`;
         answerContainer.appendChild(messageDiv);
     });
     const lastMessage = answerContainer.lastElementChild;
@@ -177,11 +184,14 @@ export function initializeFeelingsWheel() {
     const modalOverlay = document.getElementById('feelings-modal-overlay');
     const openBtn = document.getElementById('mood-tracker-btn');
     const closeBtn = document.getElementById('close-feelings-modal');
+    const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
+    const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+    const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn'); // Get reference here
     
     openBtn.addEventListener('click', () => {
         showNameSelection();
         modalOverlay.style.display = 'flex';
-        lucide.createIcons();
     });
 
     closeBtn.addEventListener('click', closeAndResetFeelingsModal);
@@ -192,6 +202,28 @@ export function initializeFeelingsWheel() {
         }
     });
 
+    // Centralize PIN modal listeners
+    if (pinEntryModalOverlay) {
+        const closePinEntryModalBtn = document.getElementById('close-pin-entry-modal');
+        submitPinEntryBtn.addEventListener('click', handlePinSubmit);
+        closePinEntryModalBtn.addEventListener('click', () => {
+            pinEntryModalOverlay.style.display = 'none';
+        });
+
+        // Add event listener for 'Enter' key on PIN inputs
+        pinEntryInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handlePinSubmit();
+            }
+        });
+        pinConfirmInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handlePinSubmit();
+            }
+        });
+    }
     updateOverallMoodIcon();
 }
 
@@ -213,7 +245,7 @@ function saveFamilyFeelings(feelings) {
     localStorage.setItem('familyFeelings', JSON.stringify(feelings));
 }
 
-function showNameSelection() {
+async function showNameSelection() {
     const nameView = document.getElementById('name-selection-view');
     const wheelView = document.getElementById('wheel-view');
     const title = document.getElementById('feelings-modal-title');
@@ -226,7 +258,7 @@ function showNameSelection() {
 
     const familyFeelings = getFamilyFeelings();
 
-    FAMILY_MEMBERS.forEach(name => {
+    for (const name of FAMILY_MEMBERS) { // Use for...of for async/await
         const personData = familyFeelings[name];
         const button = document.createElement('button');
         button.className = 'name-btn';
@@ -238,16 +270,106 @@ function showNameSelection() {
             lastFeelingHTML = `<span class="text-sm">${personData.feeling} <span class="text-xs text-white/50">(${lastUpdated})</span></span>`;
         }
 
+        // Check if the person completed the daily challenge
+        const hasCompleted = await hasCompletedDailyChallenge(name);
+        const goldStarHTML = hasCompleted ? '<i data-lucide="star" class="w-4 h-4 text-yellow-400 ml-2"></i>' : '';
+
         button.innerHTML = `<div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg">${name}</span>
+                                        <span class="font-bold text-lg flex items-center">${name}${goldStarHTML}</span>
                                         ${lastFeelingHTML}
                                     </div>`;
-        button.addEventListener('click', () => showWheelForPerson(name));
+        button.addEventListener('click', () => showPinEntryForFeelingSelection(name));
         nameView.appendChild(button);
-    });
+    }
+    lucide.createIcons(); // Moved here
 }
 
-function showWheelForPerson(name) {
+// New top-level function for handling PIN submission
+async function handlePinSubmit() {
+    const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
+    const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
+    const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+
+    const enteredPin = pinEntryInput.value;
+
+    if (isPinCreateMode) { // Use the global flag
+        const confirmedPin = pinConfirmInput.value;
+        if (enteredPin === '' || confirmedPin === '') {
+            pinEntryErrorMessage.textContent = "PIN cannot be empty.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            return;
+        }
+        if (enteredPin !== confirmedPin) {
+            pinEntryErrorMessage.textContent = "PINs do not match. Please try again.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            pinEntryInput.value = '';
+            pinConfirmInput.value = '';
+            return;
+        }
+        await setPin(currentPinEntryPerson, enteredPin);
+        pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
+        displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+    } else { // Enter PIN mode
+        const storedPin = await getPin(currentPinEntryPerson); // Re-fetch storedPin here
+        if (enteredPin === storedPin) {
+            pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
+            displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+        } else {
+            pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
+            pinEntryErrorMessage.classList.remove('hidden');
+            pinEntryInput.value = '';
+        }
+    }
+}
+
+async function showPinEntryForFeelingSelection(personName) {
+    currentPinEntryPerson = personName;
+    const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
+    const pinModalTitle = document.getElementById('pin-modal-title');
+    const pinEnterMessage = document.getElementById('pin-enter-message');
+    const pinCreateMessage = document.getElementById('pin-create-message');
+    const pinEntryPersonNameSpan = document.getElementById('pin-entry-person-name');
+    const pinEntryPersonNameCreateSpan = document.getElementById('pin-entry-person-name-create');
+    const pinEntryInput = document.getElementById('pin-entry-input');
+    const pinConfirmInput = document.getElementById('pin-confirm-input');
+    const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
+    const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn');
+
+    const storedPin = await getPin(personName);
+    isPinCreateMode = !storedPin; // Set the global flag
+    pinEntryInput.value = ''; // Clear previous input
+    pinConfirmInput.value = ''; // Clear previous input
+    pinEntryErrorMessage.classList.add('hidden'); // Hide any previous error messages
+
+    // Configure modal based on mode
+    if (isPinCreateMode) {
+        pinModalTitle.textContent = 'Create PIN';
+        pinEnterMessage.classList.add('hidden');
+        pinCreateMessage.classList.remove('hidden');
+        pinConfirmInput.classList.remove('hidden');
+        submitPinEntryBtn.textContent = 'Create PIN';
+    } else {
+        pinModalTitle.textContent = 'Enter PIN';
+        pinEnterMessage.classList.remove('hidden');
+        pinCreateMessage.classList.add('hidden');
+        pinConfirmInput.classList.add('hidden');
+        submitPinEntryBtn.textContent = 'Submit PIN';
+    }
+
+    pinEntryPersonNameSpan.textContent = personName;
+    pinEntryPersonNameCreateSpan.textContent = personName;
+
+    pinEntryModalOverlay.style.display = 'flex';
+    lucide.createIcons();
+    // Set a timeout to ensure the element is visible before focusing
+    setTimeout(() => {
+        pinEntryInput.focus();
+    }, 0);
+
+}
+
+function displayFeelingsWheelContent(name) {
     setSelectedPersonForMood(name);
     const nameView = document.getElementById('name-selection-view');
     const wheelView = document.getElementById('wheel-view');
@@ -296,7 +418,8 @@ function showWheelForPerson(name) {
     lucide.createIcons();
 }
 
-function handleFeelingSelection(event) {
+
+async function handleFeelingSelection(event) { // Ensure this function is async
     const { core, feeling } = event.currentTarget.dataset;
     const familyFeelings = getFamilyFeelings();
 
@@ -307,9 +430,33 @@ function handleFeelingSelection(event) {
     };
     saveFamilyFeelings(familyFeelings);
     
-    closeAndResetFeelingsModal();
     updateOverallMoodIcon();
-    showFeelingResponse(feeling, core);
+    showFeelingResponse(feeling, core); // This will open the new insight modal.
+    document.getElementById('feelings-modal-overlay').style.display = 'none';
+
+    // Dispatch custom event for daily challenge integration
+    document.dispatchEvent(new CustomEvent('dailyChallengeFeelingSelected', {
+        detail: { feeling, core }
+    }));
+}
+
+export function triggerConfetti() {
+    const confettiCount = 100;
+    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.animationDelay = `${Math.random() * 2}s`;
+        document.body.appendChild(confetti);
+
+        // Remove confetti after animation to prevent DOM bloat
+        confetti.addEventListener('animationend', () => {
+            confetti.remove();
+        });
+    }
 }
 
 export function updateOverallMoodIcon() {
@@ -360,11 +507,13 @@ export function initializeFeelingInsightModal() {
 
     closeBtn.addEventListener('click', () => {
         modalOverlay.style.display = 'none';
+        document.getElementById('feelings-modal-overlay').style.display = 'none';
     });
 
     modalOverlay.addEventListener('click', (event) => {
         if (event.target === modalOverlay) {
             modalOverlay.style.display = 'none';
+            document.getElementById('feelings-modal-overlay').style.display = 'none';
         }
     });
 }
