@@ -275,7 +275,7 @@ async function showNameSelection() {
         const goldStarHTML = hasCompleted ? '<i data-lucide="star" class="w-4 h-4 text-yellow-400 ml-2"></i>' : '';
 
         button.innerHTML = `<div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg">${name}${goldStarHTML}</span>
+                                        <span class="font-bold text-lg flex items-center">${name}${goldStarHTML}</span>
                                         ${lastFeelingHTML}
                                     </div>`;
         button.addEventListener('click', () => showPinEntryForFeelingSelection(name));
