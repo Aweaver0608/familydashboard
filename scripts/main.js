@@ -1,12 +1,10 @@
-import { initializePrayerRequests, handleUpdateRequest, handleUpdateAnswer } from './firebase.js';
+import { initializeFirebase, listenForPrayerRequests, addPrayerRequest, updatePrayerRequest, addPrayerAnswer, updatePrayerAnswer, getCurrentPrayerDocId } from './firebase.js';
 import { fetchActivityIdeas, askGemini, fetchConversationStarter } from './gemini.js';
-import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel } from './ui.js';
+import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel, showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
 import { initializeQuoteOfTheDay } from './quote-of-the-day.js';
 
-import { WEATHER_CITY_DETAILS, FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '../config.js';
-
-// --- Global State Variables ---
+import { WEATHER_CITY_DETAILS, FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '/config.js';
 
 // --- Global State Variables ---
 let currentVerse = {};
@@ -74,6 +72,128 @@ export async function refreshActivityIdeas() {
     }
 }
 
+async function handleAddPrayerRequest() {
+    const requestInput = document.getElementById('prayer-request-text');
+    const requestText = requestInput.value.trim();
+    const name = document.getElementById('prayer-requester-name').value;
+    
+    if (!requestText) {
+        console.warn("Prayer request text cannot be empty.");
+        requestInput.classList.add('error');
+        setTimeout(() => requestInput.classList.remove('error'), 2000);
+        return;
+    }
+    try {
+        await addPrayerRequest(name, requestText);
+        showPrayerListView();
+    } catch (e) {
+        console.error("Error adding document: ", e);
+    }
+}
+
+async function handleUpdateRequest() {
+    const requestInput = document.getElementById('prayer-request-text');
+    const requestText = requestInput.value.trim();
+    const name = document.getElementById('prayer-requester-name').value;
+    const prayerId = document.getElementById('edit-prayer-id').value;
+
+    if (!requestText) {
+        console.warn("Prayer request text cannot be empty.");
+        requestInput.classList.add('error');
+        setTimeout(() => requestInput.classList.remove('error'), 2000);
+        return;
+    }
+
+    try {
+        await updatePrayerRequest(prayerId, name, requestText);
+        showPrayerListView();
+    } catch (e) {
+        console.error("Error updating document: ", e);
+    }
+}
+
+async function handleAddPrayerAnswer() {
+    const answerInput = document.getElementById('prayer-answer-text');
+    const answerText = answerInput.value.trim();
+    const prayerId = getCurrentPrayerDocId();
+     if (!answerText || !prayerId) {
+        console.error("Answer text or document ID is missing.");
+         if (!answerText) {
+             answerInput.classList.add('error');
+             setTimeout(() => answerInput.classList.remove('error'), 2000);
+         }
+        return;
+    }
+    try {
+        await addPrayerAnswer(prayerId, answerText);
+        showPrayerListView();
+    } catch (e) {
+        console.error("Error updating document: ", e);
+    }
+}
+
+async function handleUpdateAnswer() {
+    const answerInput = document.getElementById('prayer-answer-text');
+    const answerText = answerInput.value.trim();
+    const prayerId = document.getElementById('edit-prayer-id').value;
+
+    if (!answerText) {
+        console.warn("Answer text cannot be empty.");
+        answerInput.classList.add('error');
+        setTimeout(() => answerInput.classList.remove('error'), 2000);
+        return;
+    }
+
+    try {
+        await updatePrayerAnswer(prayerId, answerText);
+        showPrayerListView();
+    } catch (e) {
+        console.error("Error updating document: ", e);
+    }
+}
+
+function initializePrayerRequests() {
+    const openBtn = document.getElementById('open-prayer-modal');
+    const closeBtn = document.getElementById('close-prayer-modal');
+    const modalOverlay = document.getElementById('prayer-modal-overlay');
+    const addNewBtn = document.getElementById('add-new-prayer-request-btn');
+    const cancelBtn = document.getElementById('cancel-prayer-request-btn');
+    const submitRequestBtn = document.getElementById('submit-prayer-request-btn');
+    const submitAnswerBtn = document.getElementById('submit-prayer-answer-btn');
+    const updateRequestBtn = document.getElementById('update-prayer-request-btn');
+    const updateAnswerBtn = document.getElementById('update-prayer-answer-btn');
+
+    openBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'flex';
+        showPrayerListView();
+    });
+    closeBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'none';
+        showPrayerListView();
+    });
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            modalOverlay.style.display = 'none';
+            showPrayerListView();
+        }
+    });
+
+    addNewBtn.addEventListener('click', showAddRequestView);
+    cancelBtn.addEventListener('click', showPrayerListView);
+    submitRequestBtn.addEventListener('click', handleAddPrayerRequest);
+    submitAnswerBtn.addEventListener('click', handleAddPrayerAnswer);
+    updateRequestBtn.addEventListener('click', () => {
+        if (window.confirm("Are you sure you want to update this prayer request?")) {
+            handleUpdateRequest();
+        }
+    });
+    updateAnswerBtn.addEventListener('click', () => {
+        if (window.confirm("Are you sure you want to update this answer?")) {
+            handleUpdateAnswer();
+        }
+    });
+}
+
 // --- APPLICATION LOGIC ---
 document.addEventListener('DOMContentLoaded', function() {
     try {
@@ -81,6 +201,17 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeDashboard();
         initializeFeelingsWheel();
         initializeFeelingInsightModal();
+        initializeFirebase().then(() => {
+            listenForPrayerRequests((prayers, error) => {
+                if (error) {
+                    document.getElementById('current-requests-list').innerHTML = `<p class="text-red-400">Could not load requests. Check security rules.</p>`;
+                    return;
+                }
+                setAllPrayers(prayers);
+                renderPrayerLists();
+                checkRecentPrayerRequests(prayers);
+            });
+        });
         initializePrayerRequests();
         initializeSmartSearchHelpModal();
         initializeSearchOperatorDropdown();
@@ -147,20 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(fetchWeather, 600000);
 
         lucide.createIcons();
-
-        const updateRequestBtn = document.getElementById('update-prayer-request-btn');
-        updateRequestBtn.addEventListener('click', () => {
-            if (window.confirm("Are you sure you want to update this prayer request?")) {
-                handleUpdateRequest();
-            }
-        });
-
-        const updateAnswerBtn = document.getElementById('update-prayer-answer-btn');
-        updateAnswerBtn.addEventListener('click', () => {
-            if (window.confirm("Are you sure you want to update this answer?")) {
-                handleUpdateAnswer();
-            }
-        });
 
         const searchInput = document.getElementById('prayer-search-input');
         searchInput.addEventListener('input', (e) => {

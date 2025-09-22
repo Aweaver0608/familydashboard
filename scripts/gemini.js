@@ -1,4 +1,4 @@
-import { GEMINI_API_KEY } from '../config.js';
+import { GEMINI_API_KEY } from '/config.js';
 import { getVerseHistory, addVerseToHistory, getRawWeatherData, setGeminiChatHistory, getSelectedPersonForMood } from './main.js';
 
 // --- JSON Schemas for Gemini ---
