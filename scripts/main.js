@@ -358,12 +358,20 @@ async function fetchCurrentConditions() {
         const data = await response.json();
 
         const current = data.current;
-        document.getElementById('weather-temp').textContent = `${Math.round(current.temperature_2m)}°`;
+        const currentTemp = Math.round(current.temperature_2m);
+
+        document.getElementById('weather-temp').textContent = `${currentTemp}°`;
         document.getElementById('weather-description').textContent = getWeatherDescription(current.weather_code);
         document.getElementById('humidity').textContent = `${current.relative_humidity_2m}%`;
         document.getElementById('feels-like').textContent = `${Math.round(current.apparent_temperature)}°`;
         document.getElementById('weather-icon').src = getWeatherIcon(current.weather_code, new Date().getHours() >= 6 && new Date().getHours() < 18);
         document.getElementById('chance-of-rain').textContent = `${Math.round(current.precipitation * 100)}%`;
+
+        const highTempEl = document.getElementById('temp-high');
+        const currentHigh = parseInt(highTempEl.textContent, 10);
+        if (isNaN(currentHigh) || currentTemp > currentHigh) {
+            highTempEl.textContent = `${currentTemp}°`;
+        }
 
         updateStaticBackground(getWeatherDescription(current.weather_code));
 
