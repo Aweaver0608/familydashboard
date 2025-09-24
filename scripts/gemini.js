@@ -155,7 +155,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
         3.  **Creative:** Think about words that sound similar, have related themes, or are common misconceptions. For example, for "serendipity", a distractor could be related to "serenity" (calmness) or sound scientific.
         4.  **Distinct:** The distractors must be clearly different from the correct definition.
 
-        Return a JSON object with a "distractors" key containing an array of the 2 incorrect definition strings.
+        Return a JSON object with a "distractors" key containing an array of 3 incorrect definition strings.
     `;
 
     try {

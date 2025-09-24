@@ -59,6 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dailyChallengeHeader.querySelector('#close-daily-challenge-modal').addEventListener('click', () => {
             dailyChallengeModalOverlay.style.display = 'none'; // Hide the overlay
             moodTrackerBtn.classList.remove('highlight-active-gold');
+            document.getElementById('quote-banner').classList.remove('highlight-active-gold');
+            document.getElementById('verse').classList.remove('highlight-active-gold');
+            document.getElementById('word-of-the-day-btn').classList.remove('highlight-active-gold');
+            document.getElementById('open-prayer-modal').classList.remove('highlight-active-gold');
             currentQuizStep = null; // Reset quiz state when closing
         });
 
