@@ -381,7 +381,11 @@ async function fetchCurrentConditions() {
             lastWeatherDescription = newWeatherDescription;
             const weatherContext = `Today's forecast is: ${newWeatherDescription}, with a temperature of ${currentTemp}°. The chance of rain is ${Math.round(current.precipitation * 100)}%.`;
             currentWeatherContext = weatherContext;
-            fetchActivityIdeas(weatherContext);
+            const ideas = await fetchActivityIdeas(weatherContext);
+            setActivityIdeas(ideas);
+            if (ideas.length > 0) {
+                renderActivityCarousel();
+            }
         }
 
         document.getElementById('weather-loading').classList.add('hidden');
