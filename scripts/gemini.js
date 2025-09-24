@@ -167,8 +167,29 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     }
 }
 
+const inspirationWords = [
+    "discovery", "silly", "teamwork", "magic", "nature", "history", "technology", "music", "art", "building", "storytelling", "adventure", "kindness", "speed", "quiet", "laughter"
+];
+
+function getTimeOfDay() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 18) return "afternoon";
+    return "evening";
+}
+
 export async function fetchActivityIdeas(weatherContext) {
-    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+    const timeOfDay = getTimeOfDay();
+    const inspiration = inspirationWords[Math.floor(Math.random() * inspirationWords.length)];
+
+    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. 
+    
+    It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: \"${weatherContext}\". 
+    Today's random inspiration word is **${inspiration}**.
+
+    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day and incorporate the inspiration word. 
+    
+    Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
     try {
         const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], undefined, activitySchema);
@@ -178,6 +199,7 @@ export async function fetchActivityIdeas(weatherContext) {
         return [];
     }
 }
+
 
 export async function fetchConversationStarter() {
     let questionHistory = [];
