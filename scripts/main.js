@@ -17,6 +17,7 @@ const VERSE_HISTORY_LENGTH = 365;
 let selectedPersonForMood = null;
 let geminiChatHistory = [];
 let currentWeatherContext = ''; // New global variable
+let lastWeatherDescription = '';
 
 export function getRawWeatherData() { return rawWeatherData; }
 export function setRawWeatherData(data) { rawWeatherData = data; }
@@ -359,9 +360,10 @@ async function fetchCurrentConditions() {
 
         const current = data.current;
         const currentTemp = Math.round(current.temperature_2m);
+        const newWeatherDescription = getWeatherDescription(current.weather_code);
 
         document.getElementById('weather-temp').textContent = `${currentTemp}°`;
-        document.getElementById('weather-description').textContent = getWeatherDescription(current.weather_code);
+        document.getElementById('weather-description').textContent = newWeatherDescription;
         document.getElementById('humidity').textContent = `${current.relative_humidity_2m}%`;
         document.getElementById('feels-like').textContent = `${Math.round(current.apparent_temperature)}°`;
         document.getElementById('weather-icon').src = getWeatherIcon(current.weather_code, new Date().getHours() >= 6 && new Date().getHours() < 18);
@@ -373,11 +375,14 @@ async function fetchCurrentConditions() {
             highTempEl.textContent = `${currentTemp}°`;
         }
 
-        updateStaticBackground(getWeatherDescription(current.weather_code));
+        updateStaticBackground(newWeatherDescription);
 
-        const weatherContext = `Today's forecast is: ${getWeatherDescription(current.weather_code)}, with a temperature of ${currentTemp}°. The chance of rain is ${Math.round(current.precipitation * 100)}%.`;
-        currentWeatherContext = weatherContext;
-        fetchActivityIdeas(weatherContext);
+        if (newWeatherDescription !== lastWeatherDescription) {
+            lastWeatherDescription = newWeatherDescription;
+            const weatherContext = `Today's forecast is: ${newWeatherDescription}, with a temperature of ${currentTemp}°. The chance of rain is ${Math.round(current.precipitation * 100)}%.`;
+            currentWeatherContext = weatherContext;
+            fetchActivityIdeas(weatherContext);
+        }
 
         document.getElementById('weather-loading').classList.add('hidden');
         document.getElementById('weather-content').classList.remove('hidden');
