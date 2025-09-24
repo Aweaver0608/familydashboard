@@ -178,16 +178,22 @@ function getTimeOfDay() {
     return "evening";
 }
 
+function getInspirationWords(count) {
+    const shuffled = inspirationWords.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
 export async function fetchActivityIdeas(weatherContext) {
     const timeOfDay = getTimeOfDay();
-    const inspiration = inspirationWords[Math.floor(Math.random() * inspirationWords.length)];
+    const inspirations = getInspirationWords(3);
+    const inspirationText = inspirations.join(', ').replace(/, ([^,]*)$/, ' and $1'); // Formats to "a, b, and c"
 
     const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. 
     
-    It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: \"${weatherContext}\". 
-    Today's random inspiration word is **${inspiration}**.
+    It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: "${weatherContext}". 
+    Today's random inspiration words are **${inspirationText}**.
 
-    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day and incorporate the inspiration word. 
+    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day and incorporate the inspiration words. 
     
     Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
