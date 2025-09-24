@@ -375,6 +375,10 @@ async function fetchCurrentConditions() {
 
         updateStaticBackground(getWeatherDescription(current.weather_code));
 
+        const weatherContext = `Today's forecast is: ${getWeatherDescription(current.weather_code)}, with a temperature of ${currentTemp}°. The chance of rain is ${Math.round(current.precipitation * 100)}%.`;
+        currentWeatherContext = weatherContext;
+        fetchActivityIdeas(weatherContext);
+
         document.getElementById('weather-loading').classList.add('hidden');
         document.getElementById('weather-content').classList.remove('hidden');
 
