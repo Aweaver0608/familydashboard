@@ -6,7 +6,7 @@ export const MERRIAM_WEBSTER_COLLEGIATE_API_KEY = "f197f19e-dfd4-4e19-baf6-dd705
 
 export const WEATHER_CITY = "Greer,US";
 export const WEATHER_UNITS = "imperial";
-export const WEATHER_CITY_DETAILS = { lat: 34.9388, lon: -82.2386 }; // Placeholder: Update with actual coordinates for your city
+export const WEATHER_CITY_DETAILS = { lat: 34.88250345162454, lon: -82.24107075641736 }; // Placeholder: Update with actual coordinates for your city
 export const FAMILY_MEMBERS = ["Andrew", "Jenna", "Olivia", "Malia", "Kaci", "Declan", "Halle", "Liam"];
 
 export const FEELINGS_WHEEL = {

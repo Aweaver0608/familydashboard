@@ -168,7 +168,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
 }
 
 const inspirationWords = [
-    "discovery", "silly", "teamwork", "magic", "nature", "history", "technology", "music", "art", "building", "storytelling", "adventure", "kindness", "speed", "quiet", "laughter"
+    "educational","discovery", "silly", "teamwork", "magic", "nature", "history", "technology", "music", "art", "building", "storytelling", "adventure", "kindness", "speed", "quiet", "laughter"
 ];
 
 function getTimeOfDay() {
