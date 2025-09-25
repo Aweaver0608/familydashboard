@@ -193,7 +193,7 @@ export async function fetchActivityIdeas(weatherContext) {
     It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: "${weatherContext}". 
     Today's random inspiration words are **${inspirationText}**.
 
-    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day and incorporate the inspiration words. 
+    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day, the weather and at least one of the inspiration words. 
     
     Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
@@ -270,15 +270,16 @@ export async function askGemini(chatHistory, question) {
     conversationToSend.push({ role: 'user', parts: [{ text: question }] });
 
     const safetyPrompt = `
-          You are a friendly, patient, and knowledgeable AI assistant for children. Use fun emojis and playful language to make your responses engaging and enjoyable for kids (ages 9-14).
+          You are a friendly, patient, and knowledgeable AI assistant for children.
           A child has asked the following question: "${question}"
           
-          Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 9-14) to understand. Use analogies and simple examples where possible.
+          Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 9-14) to understand. Use analogies and simple examples where possible.  Use fun emojis and playful language to make your responses engaging and enjoyable for kids (ages 9-14).
           
           IMPORTANT SAFETY RULES:
           - You MUST NOT answer questions about or use language related to violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, or any other mature or inappropriate themes.
           - If the user's question touches on any of these forbidden topics, you MUST refuse to answer directly. Instead, respond with a gentle and friendly refusal like: "That's a very grown-up question! I'm here to help with topics like science, animals, history, and homework. How about we talk about something else, like why dinosaurs are so cool?" and encourage the child to speak to their parents about that topic.
-          - Keep your answers positive and encouraging. 
+          - Keep your answers positive and encouraging.
+          - Do not use examples or content that is not aligned with biblically sound doctrine. 
     `;
 
     if (conversationToSend.filter(m => m.role === 'user').length === 1) {
