@@ -55,7 +55,7 @@ const feelingInsightSchema = {
     required: ["explanation", "strategies"]
 };
 
-async function callGemini(chatHistory, model = "gemini-1.5-flash-latest", responseSchema = null) {
+async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
     const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
     if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
         console.error("Gemini API key is missing.");
@@ -74,6 +74,8 @@ async function callGemini(chatHistory, model = "gemini-1.5-flash-latest", respon
                     responseSchema: responseSchema
                 };
             }
+
+            console.log('Gemini API Payload:', JSON.stringify(payload, null, 2));
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -155,7 +157,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
         3.  **Creative:** Think about words that sound similar, have related themes, or are common misconceptions. For example, for "serendipity", a distractor could be related to "serenity" (calmness) or sound scientific.
         4.  **Distinct:** The distractors must be clearly different from the correct definition.
 
-        Return a JSON object with a "distractors" key containing an array of the 2 incorrect definition strings.
+        Return a JSON object with a "distractors" key containing an array of 3 incorrect definition strings.
     `;
 
     try {
@@ -167,8 +169,35 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     }
 }
 
+const inspirationWords = [
+    "educational","discovery", "silly", "teamwork", "magic", "nature", "history", "technology", "music", "art", "building", "storytelling", "adventure", "kindness", "speed", "quiet", "laughter"
+];
+
+function getTimeOfDay() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "morning";
+    if (hour < 18) return "afternoon";
+    return "evening";
+}
+
+function getInspirationWords(count) {
+    const shuffled = inspirationWords.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
 export async function fetchActivityIdeas(weatherContext) {
-    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. Based on this weather information for Greer, SC: "${weatherContext}". Provide 10 diverse ideas for fun family activities or local events. Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
+    const timeOfDay = getTimeOfDay();
+    const inspirations = getInspirationWords(3);
+    const inspirationText = inspirations.join(', ').replace(/, ([^,]*)$/, ' and $1'); // Formats to "a, b, and c"
+
+    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. 
+    
+    It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: "${weatherContext}". 
+    Today's random inspiration words are **${inspirationText}**.
+
+    Provide 10 diverse ideas for fun family activities or local events that are appropriate for the time of day, the weather and at least one of the inspiration words. 
+    
+    Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
     try {
         const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], undefined, activitySchema);
@@ -178,6 +207,7 @@ export async function fetchActivityIdeas(weatherContext) {
         return [];
     }
 }
+
 
 export async function fetchConversationStarter() {
     let questionHistory = [];
@@ -242,15 +272,16 @@ export async function askGemini(chatHistory, question) {
     conversationToSend.push({ role: 'user', parts: [{ text: question }] });
 
     const safetyPrompt = `
-          You are a friendly, patient, and knowledgeable AI assistant for children. Use fun emojis and playful language to make your responses engaging and enjoyable for kids (ages 9-14).
-          A child has asked the following question: "${question}"
-          
-          Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 9-14) to understand. Use analogies and simple examples where possible.
-          
-          IMPORTANT SAFETY RULES:
-          - You MUST NOT answer questions about or use language related to violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, or any other mature or inappropriate themes.
-          - If the user's question touches on any of these forbidden topics, you MUST refuse to answer directly. Instead, respond with a gentle and friendly refusal like: "That's a very grown-up question! I'm here to help with topics like science, animals, history, and homework. How about we talk about something else, like why dinosaurs are so cool?" and encourage the child to speak to their parents about that topic.
-          - Keep your answers positive and encouraging. 
+          **IMPORTANT RULES:**
+          - **DO NOT** answer questions about: violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, religion, evolution, the origin of the world, or other mature or controversial topics.
+          - If a user asks about one of those topics, you MUST respond with **only** this exact phrase: "That's a really interesting and important question! It's a great thing to talk about with your mom and dad."
+          - For all other questions, keep your answers positive, encouraging, and simple for a child (ages 9-14) to understand.
+
+          **Your Personality:**
+          - You are a friendly and fun AI assistant.
+          - You MUST use lots of emojis in all of your responses to make them fun and engaging. ✨🚀🤔
+
+          The user's question is: "${question}"
     `;
 
     if (conversationToSend.filter(m => m.role === 'user').length === 1) {

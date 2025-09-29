@@ -1,8 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { FAMILY_MEMBERS } from '/config.js';
-import { showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, renderPrayerLists, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
 
 const firebaseConfigStr = typeof __firebase_config !== 'undefined' 
     ? __firebase_config 
@@ -22,48 +20,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // --- PRAYER REQUEST LOGIC ---
-let prayerRequestsUnsubscribe = null; // To hold the listener
-let currentPrayerDocId = null; // To hold the ID of the prayer being answered
+let prayerRequestsUnsubscribe = null;
+let currentPrayerDocId = null;
 
-export async function initializePrayerRequests() {
-    const openBtn = document.getElementById('open-prayer-modal');
-    const closeBtn = document.getElementById('close-prayer-modal');
-    const modalOverlay = document.getElementById('prayer-modal-overlay');
-    const addNewBtn = document.getElementById('add-new-prayer-request-btn');
-    const cancelBtn = document.getElementById('cancel-prayer-request-btn');
-    const submitRequestBtn = document.getElementById('submit-prayer-request-btn');
-    const submitAnswerBtn = document.getElementById('submit-prayer-answer-btn');
-
-    openBtn.addEventListener('click', () => {
-        modalOverlay.style.display = 'flex';
-        showPrayerListView(); // This ensures the initial view is correct
-    });
-    closeBtn.addEventListener('click', () => {
-        modalOverlay.style.display = 'none';
-        showPrayerListView(); // Reset view on close
-    });
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) {
-            modalOverlay.style.display = 'none';
-            showPrayerListView(); // Reset view on close
-        }
-    });
-
-    addNewBtn.addEventListener('click', showAddRequestView);
-    cancelBtn.addEventListener('click', showPrayerListView);
-    submitRequestBtn.addEventListener('click', handleAddPrayerRequest);
-    submitAnswerBtn.addEventListener('click', handleAddPrayerAnswer);
-
+export async function initializeFirebase() {
     try {
-        // **FIX:** Force anonymous sign-in for this specific project, ignoring environment tokens.
         await signInAnonymously(auth);
-        listenForPrayerRequests(); // Attach listener AFTER successful sign-in
     } catch (error) {
         console.error("Anonymous sign-in failed.", error);
     }
 }
 
-function listenForPrayerRequests() {
+export function listenForPrayerRequests(onUpdate) {
     const prayerCollection = collection(db, "prayerRequests");
     const q = query(prayerCollection, orderBy("requestedAt", "desc"));
 
@@ -72,118 +40,66 @@ function listenForPrayerRequests() {
         querySnapshot.forEach((doc) => {
             prayers.push({ id: doc.id, ...doc.data() });
         });
-        setAllPrayers(prayers);
-        renderPrayerLists();
-        checkRecentPrayerRequests(prayers);
+        onUpdate(prayers);
     }, (error) => {
         console.error("Error listening for prayer requests:", error);
-        document.getElementById('current-requests-list').innerHTML = `<p class="text-red-400">Could not load requests. Check security rules.</p>`;
+        onUpdate([], error);
     });
 }
 
-async function handleAddPrayerRequest() {
-    const requestInput = document.getElementById('prayer-request-text');
-    const requestText = requestInput.value.trim();
-    const name = document.getElementById('prayer-requester-name').value;
-    
+export async function addPrayerRequest(name, requestText) {
     if (!requestText) {
-        console.warn("Prayer request text cannot be empty.");
-        requestInput.classList.add('error');
-        setTimeout(() => requestInput.classList.remove('error'), 2000);
-        return;
+        return Promise.reject("Prayer request text cannot be empty.");
     }
-    try {
-        await addDoc(collection(db, "prayerRequests"), {
-            name: name,
-            requestText: requestText,
-            requestedAt: serverTimestamp(),
-            status: 'current',
-            answerText: null,
-            answeredAt: null
-        });
-        showPrayerListView();
-    } catch (e) {
-        console.error("Error adding document: ", e);
-    }
+    return addDoc(collection(db, "prayerRequests"), {
+        name: name,
+        requestText: requestText,
+        requestedAt: serverTimestamp(),
+        status: 'current',
+        answerText: null,
+        answeredAt: null
+    });
 }
 
-export async function handleUpdateRequest() {
-    const requestInput = document.getElementById('prayer-request-text');
-    const requestText = requestInput.value.trim();
-    const name = document.getElementById('prayer-requester-name').value;
-    const prayerId = document.getElementById('edit-prayer-id').value;
-
+export async function updatePrayerRequest(prayerId, name, requestText) {
     if (!requestText) {
-        console.warn("Prayer request text cannot be empty.");
-        requestInput.classList.add('error');
-        setTimeout(() => requestInput.classList.remove('error'), 2000);
-        return;
+        return Promise.reject("Prayer request text cannot be empty.");
     }
-
-    try {
-        const prayerDocRef = doc(db, "prayerRequests", prayerId);
-        await updateDoc(prayerDocRef, {
-            name: name,
-            requestText: requestText,
-            //Do NOT update requestedAt
-        });
-        showPrayerListView();
-    } catch (e) {
-        console.error("Error updating document: ", e);
-    
-    }
+    const prayerDocRef = doc(db, "prayerRequests", prayerId);
+    return updateDoc(prayerDocRef, {
+        name: name,
+        requestText: requestText,
+    });
 }
 
-async function handleAddPrayerAnswer() {
-    const answerInput = document.getElementById('prayer-answer-text');
-    const answerText = answerInput.value.trim();
-     if (!answerText || !currentPrayerDocId) {
-        console.error("Answer text or document ID is missing.");
-         if (!answerText) {
-             answerInput.classList.add('error');
-             setTimeout(() => answerInput.classList.remove('error'), 2000);
-         }
-        return;
+export async function addPrayerAnswer(prayerId, answerText) {
+     if (!answerText || !prayerId) {
+        return Promise.reject("Answer text or document ID is missing.");
     }
-    const prayerDocRef = doc(db, "prayerRequests", currentPrayerDocId);
-    try {
-        await updateDoc(prayerDocRef, {
-            status: 'answered',
-            answerText: answerText,
-            answeredAt: serverTimestamp()
-        });
-        showPrayerListView();
-        currentPrayerDocId = null; // Reset
-    } catch (e) {
-        console.error("Error updating document: ", e);
-    }
+    const prayerDocRef = doc(db, "prayerRequests", prayerId);
+    return updateDoc(prayerDocRef, {
+        status: 'answered',
+        answerText: answerText,
+        answeredAt: serverTimestamp()
+    });
 }
 
-export async function handleUpdateAnswer() {
-    const answerInput = document.getElementById('prayer-answer-text');
-    const answerText = answerInput.value.trim();
-    const prayerId = document.getElementById('edit-prayer-id').value;
-
+export async function updatePrayerAnswer(prayerId, answerText) {
     if (!answerText) {
-        console.warn("Answer text cannot be empty.");
-        answerInput.classList.add('error');
-        setTimeout(() => answerInput.classList.remove('error'), 2000);
-        return;
+        return Promise.reject("Answer text cannot be empty.");
     }
-
-    try {
-        const prayerDocRef = doc(db, "prayerRequests", prayerId);
-        await updateDoc(prayerDocRef, {
-            answerText: answerText,
-        });
-        showPrayerListView();
-    } catch (e) {
-        console.error("Error updating document: ", e);
-    }
+    const prayerDocRef = doc(db, "prayerRequests", prayerId);
+    return updateDoc(prayerDocRef, {
+        answerText: answerText,
+    });
 }
 
 export function setCurrentPrayerDocId(id) {
     currentPrayerDocId = id;
+}
+
+export function getCurrentPrayerDocId() {
+    return currentPrayerDocId;
 }
 
 export async function getPin(name) {

@@ -55,7 +55,7 @@ const feelingInsightSchema = {
     required: ["explanation", "strategies"]
 };
 
-async function callGemini(chatHistory, model = "gemini-1.5-flash-latest", responseSchema = null) {
+async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
     const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
     if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
         console.error("Gemini API key is missing.");
@@ -74,6 +74,8 @@ async function callGemini(chatHistory, model = "gemini-1.5-flash-latest", respon
                     responseSchema: responseSchema
                 };
             }
+
+            console.log('Gemini API Payload:', JSON.stringify(payload, null, 2));
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -270,16 +272,16 @@ export async function askGemini(chatHistory, question) {
     conversationToSend.push({ role: 'user', parts: [{ text: question }] });
 
     const safetyPrompt = `
-          You are a friendly AI assistant for children. Be playful and use lots of emojis to make your answers fun and engaging.
-          A child has asked the following question: "${question}"
-          
-          Your task is to answer this question in a way that is simple, engaging, and easy for a child (ages 9-14) to understand. Use analogies and simple examples where possible.  You MUST use fun emojis (like ✨, 🤔, 🚀, or 💡) and playful language throughout your entire response to make your responses engaging and enjoyable for kids (ages 9-14).
-          
-          IMPORTANT SAFETY RULES:
-          - You MUST NOT answer questions about or use language related to violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, or any other mature or inappropriate themes.
-          - If the question is about the origin of the world, how old the earth is, dinosaurs, evolution, religion, or other topics where people have different belief systems, you MUST respond with: "That's a really interesting and important question! It's a great thing to talk about with your mom and dad." Do not attempt to answer the question.
-          - For any other question that touches on a mature or inappropriate theme, you MUST refuse to answer directly. Instead, respond with a gentle and friendly refusal like: "That's a very grown-up question! I'm here to help with topics like science, animals, history, and homework. How about we talk about something else fun?" and encourage the child to speak to their parents about that topic.
-          - Keep your answers positive and encouraging. 
+          **IMPORTANT RULES:**
+          - **DO NOT** answer questions about: violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, religion, evolution, the origin of the world, or other mature or controversial topics.
+          - If a user asks about one of those topics, you MUST respond with **only** this exact phrase: "That's a really interesting and important question! It's a great thing to talk about with your mom and dad."
+          - For all other questions, keep your answers positive, encouraging, and simple for a child (ages 9-14) to understand.
+
+          **Your Personality:**
+          - You are a friendly and fun AI assistant.
+          - You MUST use lots of emojis in all of your responses to make them fun and engaging. ✨🚀🤔
+
+          The user's question is: "${question}"
     `;
 
     if (conversationToSend.filter(m => m.role === 'user').length === 1) {
