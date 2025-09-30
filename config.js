@@ -7,7 +7,64 @@ export const MERRIAM_WEBSTER_COLLEGIATE_API_KEY = "f197f19e-dfd4-4e19-baf6-dd705
 export const WEATHER_CITY = "Greer,US";
 export const WEATHER_UNITS = "imperial";
 export const WEATHER_CITY_DETAILS = { lat: 34.88250345162454, lon: -82.24107075641736 }; // Placeholder: Update with actual coordinates for your city
-export const FAMILY_MEMBERS = ["Andrew", "Jenna", "Olivia", "Malia", "Kaci", "Declan", "Halle", "Liam"];
+export const FAMILY_MEMBERS = [
+    {
+        name: 'Andrew',
+        birthdate: '1987-08-09', // Use YYYY-MM-DD format
+        relationship: 'parent',
+        gender: 'male',
+        color: '#F97316' // Optional: color for avatars
+    },
+    {
+        name: 'Jenna',
+        birthdate: '1988-06-21', // Use YYYY-MM-DD format
+        relationship: 'parent',
+        gender: 'female',
+        color: '#14B8A6' // Optional: color for avatars
+    },
+    {
+        name: 'Olivia',
+        birthdate: '2008-05-26', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'female',
+        color: '#A855F7' // Optional: color for avatars
+    },
+    {
+        name: 'Malia',
+        birthdate: '2011-08-09', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'female',
+        color: '#EC4899' // Optional: color for avatars
+    },
+    {
+        name: 'Kaci',
+        birthdate: '2012-10-10', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'female',
+        color: '#EAB308' // Optional: color for avatars
+    },
+    {
+        name: 'Declan',
+        birthdate: '2013-12-13', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'male',
+        color: '#3B82F6' // Optional: color for avatars
+    },
+    {
+        name: 'Halle',
+        birthdate: '2013-08-28', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'female',
+        color: '#EF4444' // Optional: color for avatars
+    },
+    {
+        name: 'Liam',
+        birthdate: '2016-07-30', // Use YYYY-MM-DD format
+        relationship: 'child',
+        gender: 'male',
+        color: '#22C55E' // Optional: color for avatars
+    }
+];
 
 export const FEELINGS_WHEEL = {
     "Mad": {

@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Family Dashboard</title>
+    <title>Family Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -17,15 +16,16 @@
 
     
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="style-dev.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body class="bg-black text-white">
 
     <div id="quote-banner">
         <div id="quote-content">
-            <p id="quote-text"></p>
-            <p id="quote-author"></p>
+            <span id="quote-text-wrapper">
+                <p id="quote-text"></p>
+                <p id="quote-author"></p>
+            </span>
         </div>
     </div>
 
@@ -41,11 +41,11 @@
                     <h1 id="time" class="text-6xl font-bold text-shadow -mb-2"></h1>
                     <span id="ampm" class="text-3xl font-semibold text-shadow -mb-2"></span>
                 </div>
-                </div>
+            </div>
 
             <!-- Calendar -->
             <div id="calendar" class="widget flex flex-col p-0 overflow-hidden">
-                <button id="refresh-calendar" class="square-glass-btn">
+                <button id="refresh-calendar" class="square-glass-btn" aria-label="Refresh Calendar">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
                 <iframe id="calendar-iframe" src="https://calendar.google.com/calendar/embed?src=wksest2015%40gmail.com&ctz=America%2FNew_York&mode=AGENDA" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
@@ -134,11 +134,7 @@
     </div>
     
     <!-- Floating Action Buttons -->
-    <!--<button id="open-gemini-modal" class="glass-btn">
-        <i data-lucide="sparkles" class="w-6 h-6"></i>
-        <span>Ask Gemini</span>
-    </button>-->
-<button id="open-gemini-modal" class="square-glass-btn">
+    <button id="open-gemini-modal" class="square-glass-btn">
     <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 65 65" class="w-6 h-6">
         <mask id="maskme" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="65" height="65"><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="#000"/><path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="url(#prefix__paint0_linear_2001_67)"/></mask><g mask="url(#maskme)"><g filter="url(#prefix__filter0_f_2001_67)"><path d="M-5.859 50.734c7.498 2.663 16.116-2.33 19.249-11.152 3.133-8.821-.406-18.131-7.904-20.794-7.498-2.663-16.116 2.33-19.25 11.151-3.132 8.822.407 18.132 7.905 20.795z" fill="#FFE432"/></g><g filter="url(#prefix__filter1_f_2001_67)"><path d="M27.433 21.234c7.498 2.663 16.116-2.33 19.25-11.152 3.132-8.821-.407-18.131-7.905-20.794-7.498-2.663-16.116 2.33-19.249 11.151-3.133 8.822.406 18.132 7.904 20.795z" fill="#34A853"/></g><g filter="url(#prefix__filter2_f_2001_67)"><path d="M69.263 30.12c-2.663-7.498-11.15-12.49-20.794-12.49-9.643 0-18.13 4.992-20.794 12.49l-2.89 8.12c-2.663 7.498 2.33 16.116 12.49 19.25 10.16 3.132 19.47-.407 22.133-7.905l9.855-27.688z" fill="#4285F4"/></g><g filter="url(#prefix__filter3_f_2001_67)"><path d="M42.153 69.263c-7.498-2.663-12.49-11.15-12.49-20.794s4.992-18.13 12.49-20.794l8.12-2.89c7.498-2.663 16.116 2.33 19.25 11.152 3.132 8.821-.407 18.131-7.905 20.794-7.498 2.663-16.116-2.33-19.25-11.152z" fill="#EA4335"/></g></g><defs><filter id="prefix__filter0_f_2001_67" x="-22.859" y=".938" width="58.242" height="58.242" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter1_f_2001_67" x="-1.567" y="-18.766" width="58.242" height="58.242" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter2_f_2001_67" x="15.579" y="7.629" width="63.539" height="63.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><filter id="prefix__filter3_f_2001_67" x="19.663" y="15.579" width="63.539" height="63.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_2001_67"/></filter><linearGradient id="prefix__paint0_linear_2001_67" x1="32.5" y1="0" x2="32.5" y2="65" gradientUnits="userSpaceOnUse"><stop stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
     </svg>
@@ -151,7 +147,7 @@
 </button>
 
     <!-- Mood Tracker Button -->
-    <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <button id="mood-tracker-btn" class="glass-btn p-6 fixed bottom-6 left-1/2 -translate-x-1/2 z-50" aria-label="Open Mood Tracker">
         <i id="overall-mood-icon" data-lucide="smile" class="w-16 h-16"></i>
     </button>
 
@@ -170,20 +166,28 @@
     <div id="gemini-modal-overlay" class="modal-overlay" style="display: none;">
         <div id="gemini-chat-modal" class="modal-content">
             <div class="modal-header flex justify-between items-center">
-                <h2 class="text-xl font-bold">Ask a Question!</h2>
-                <button id="close-gemini-modal" class="p-1 rounded-full hover:bg-white/10">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+                <h2 id="gemini-modal-title" class="text-xl font-bold">Ask a Question!</h2>
+                <div class="flex items-center gap-4">
+                    <button id="gemini-switch-user-btn" class="text-sm text-white/70 hover:text-white hidden">Switch User</button>
+                    <button id="close-gemini-modal" class="p-1 rounded-full hover:bg-white/10">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
             </div>
             <div class="modal-body">
-                <div id="gemini-answer-container" class="scrollable-content">
-                    <!-- Chat messages will be appended here -->
+                <div id="gemini-name-selection-view">
+                    <!-- Name selection buttons will be injected here -->
                 </div>
-                <div id="gemini-input-area">
-                    <textarea id="gemini-question-input" rows="1" placeholder="Ask anything..."></textarea>
-                    <button id="submit-gemini-question" class="gemini-btn">
-                        <i data-lucide="send" class="w-5 h-5"></i>
-                    </button>
+                <div id="gemini-chat-view" class="hidden h-full flex flex-col">
+                    <div id="gemini-answer-container" class="scrollable-content">
+                        <!-- Chat messages will be appended here -->
+                    </div>
+                    <div id="gemini-input-area">
+                        <textarea id="gemini-question-input" rows="1" placeholder="Ask anything..."></textarea>
+                        <button id="submit-gemini-question" class="gemini-btn">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -410,7 +414,7 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script type="module" src="scripts/main.js"></script>
-    <script type="module" src="scripts/gamify.js"></script>
+    <script type="module" src="scripts/main.js" defer></script>
+    <script type="module" src="scripts/gamify.js" defer></script>
 </body>
 </html>

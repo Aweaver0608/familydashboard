@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const storedData = localStorage.getItem('verseData');
             if (storedData) {
-                return JSON.parse(storedData);
+                const parsedData = JSON.parse(storedData);
+                return parsedData.insights; // Return the nested insights object
             }
         } catch (e) {
             console.error("Error reading verse insights from localStorage:", e);
@@ -290,10 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     openPrayerModalBtn.click();
                 });
                 dailyChallengeFooter.querySelector('#i-have-prayed-btn').addEventListener('click', () => {
+                    const dailyChallengeModalOverlay = document.getElementById('daily-challenge-modal-overlay');
                     openPrayerModalBtn.classList.remove('highlight-active-gold');
                     currentQuizStep = QUIZ_STEPS.QUIZ_COMPLETE_STEP;
-                    updateDailyChallengeDialog();
                     triggerConfetti();
+                    // Close the dialog after completing the final step.
+                    dailyChallengeModalOverlay.style.display = 'none';
                 });
                 break;
             case QUIZ_STEPS.QUIZ_COMPLETE_STEP:

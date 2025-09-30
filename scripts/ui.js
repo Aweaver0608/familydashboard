@@ -1,5 +1,5 @@
 import { FAMILY_MEMBERS, FEELINGS_WHEEL, WEATHER_IMAGES, NLT_VERSES_FOR_DAY } from '/config.js';
-import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory } from './main.js';
+import { getCurrentVerse, setCurrentVerse, getVerseInsights, setVerseInsights, getCurrentVerseInsightIndex, setCurrentVerseInsightIndex, getActivityIdeas, setCurrentIdeaIndex, getCurrentIdeaIndex, getSelectedPersonForMood, setSelectedPersonForMood, getGeminiChatHistory, setGeminiChatUser } from './main.js';
 import { setCurrentPrayerDocId, getPin, setPin, hasCompletedDailyChallenge } from './firebase.js';
 import { showFeelingResponse, fetchVerseInsights } from './gemini.js';
 
@@ -40,13 +40,18 @@ export function updateVerseFromLocalList() {
     const today = new Date();
     const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
     const verse = NLT_VERSES_FOR_DAY[dayOfYear % NLT_VERSES_FOR_DAY.length];
-    setCurrentVerse(verse);
+    updateVerseDisplay(verse);
+}
 
-    document.getElementById('verse-text').textContent = verse.text;
-    document.getElementById('verse-reference').textContent = verse.reference;
-    fetchVerseInsights(verse).then(insights => {
+export function updateVerseDisplay(newVerse) {
+    setCurrentVerse(newVerse);
+    document.getElementById('verse-text').textContent = newVerse.text;
+    document.getElementById('verse-reference').textContent = newVerse.reference;
+    fetchVerseInsights(newVerse).then(insights => {
         if (insights) {
             renderVerseCarousel(insights);
+            localStorage.setItem('lastVerseDate', new Date().toISOString().slice(0, 10));
+            localStorage.setItem('verseData', JSON.stringify({ verse: newVerse, insights: insights }));
         }
     });
 }
@@ -175,8 +180,65 @@ export function renderChatHistory() {
         answerContainer.appendChild(messageDiv);
     });
     const lastMessage = answerContainer.lastElementChild;
-    if (lastMessage) {
-        lastMessage.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Ensure the correct view is visible
+    const nameSelectionView = document.getElementById('gemini-name-selection-view');
+    const chatView = document.getElementById('gemini-chat-view');
+    nameSelectionView.classList.add('hidden');
+    chatView.classList.remove('hidden');
+}
+
+export function openGeminiModal() {
+    const modalOverlay = document.getElementById('gemini-modal-overlay');
+    modalOverlay.style.display = 'flex';
+    showGeminiNameSelection();
+}
+
+function scrollAndFocusChat() {
+    // This function will be called after the chat is rendered.
+    setTimeout(() => { // Use a timeout to ensure rendering is complete
+        const answerContainer = document.getElementById('gemini-answer-container');
+        answerContainer.scrollTop = answerContainer.scrollHeight;
+        document.getElementById('gemini-question-input').focus();
+    }, 50);
+}
+export function showGeminiNameSelection() {
+    const nameSelectionView = document.getElementById('gemini-name-selection-view');
+    const chatView = document.getElementById('gemini-chat-view');
+    const modalTitle = document.getElementById('gemini-modal-title');
+    const switchUserBtn = document.getElementById('gemini-switch-user-btn');
+
+    modalTitle.textContent = 'Who is asking?';
+    switchUserBtn.classList.add('hidden');
+    nameSelectionView.classList.remove('hidden');
+    chatView.classList.add('hidden');
+    nameSelectionView.innerHTML = ''; // Clear previous buttons
+
+    FAMILY_MEMBERS.forEach(person => {
+        const button = document.createElement('button');
+        button.className = 'name-btn'; // Use the same style as the feelings modal
+        button.innerHTML = `<span class="font-bold text-lg">${person.name}</span>`;
+        button.addEventListener('click', () => handleGeminiUserSelection(person.name));
+        nameSelectionView.appendChild(button);
+    });
+}
+
+async function handleGeminiUserSelection(name) {
+    const storedPin = await getPin(name);
+    showPinEntry(name, () => {
+        setGeminiChatUser(name);
+        showGeminiChatView(name, scrollAndFocusChat); // Pass the callback here
+    });
+}
+
+export function showGeminiChatView(userName, callback) {
+    const modalTitle = document.getElementById('gemini-modal-title');
+    const switchUserBtn = document.getElementById('gemini-switch-user-btn');
+    modalTitle.textContent = `Ask Gemini, ${userName}!`;
+    switchUserBtn.classList.remove('hidden');
+    renderChatHistory(); // This function already handles showing the chat view
+    if (typeof callback === 'function') {
+        callback();
     }
 }
 
@@ -184,8 +246,6 @@ export function initializeFeelingsWheel() {
     const modalOverlay = document.getElementById('feelings-modal-overlay');
     const openBtn = document.getElementById('mood-tracker-btn');
     const closeBtn = document.getElementById('close-feelings-modal');
-    const pinEntryInput = document.getElementById('pin-entry-input');
-    const pinConfirmInput = document.getElementById('pin-confirm-input');
     const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
     const submitPinEntryBtn = document.getElementById('submit-pin-entry-btn'); // Get reference here
     
@@ -205,6 +265,8 @@ export function initializeFeelingsWheel() {
     // Centralize PIN modal listeners
     if (pinEntryModalOverlay) {
         const closePinEntryModalBtn = document.getElementById('close-pin-entry-modal');
+        const pinEntryInput = document.getElementById('pin-entry-input');
+        const pinConfirmInput = document.getElementById('pin-confirm-input');
         submitPinEntryBtn.addEventListener('click', handlePinSubmit);
         closePinEntryModalBtn.addEventListener('click', () => {
             pinEntryModalOverlay.style.display = 'none';
@@ -258,11 +320,12 @@ async function showNameSelection() {
 
     const familyFeelings = getFamilyFeelings();
 
-    for (const name of FAMILY_MEMBERS) { // Use for...of for async/await
-        const personData = familyFeelings[name];
+    for (const person of FAMILY_MEMBERS) { // Use for...of for async/await
+        const personName = person.name; // Extract the name string from the person object
+        const personData = familyFeelings[personName];
         const button = document.createElement('button');
         button.className = 'name-btn';
-        button.dataset.name = name;
+        button.dataset.name = personName;
 
         let lastFeelingHTML = '<span class="text-xs text-white/50">Click to select a feeling</span>';
         if (personData) {
@@ -271,14 +334,14 @@ async function showNameSelection() {
         }
 
         // Check if the person completed the daily challenge
-        const hasCompleted = await hasCompletedDailyChallenge(name);
+        const hasCompleted = await hasCompletedDailyChallenge(personName);
         const goldStarHTML = hasCompleted ? '<i data-lucide="star" class="w-4 h-4 text-yellow-400 ml-2"></i>' : '';
 
         button.innerHTML = `<div class="flex justify-between items-center">
-                                        <span class="font-bold text-lg flex items-center">${name}${goldStarHTML}</span>
+                                        <span class="font-bold text-lg flex items-center">${personName}${goldStarHTML}</span>
                                         ${lastFeelingHTML}
                                     </div>`;
-        button.addEventListener('click', () => showPinEntryForFeelingSelection(name));
+        button.addEventListener('click', () => showPinEntryForFeelingSelection(personName));
         nameView.appendChild(button);
     }
     lucide.createIcons(); // Moved here
@@ -286,6 +349,7 @@ async function showNameSelection() {
 
 // New top-level function for handling PIN submission
 async function handlePinSubmit() {
+    const pinSubmitCallback = window.pinSubmitSuccessCallback; // Retrieve the callback
     const pinEntryInput = document.getElementById('pin-entry-input');
     const pinConfirmInput = document.getElementById('pin-confirm-input');
     const pinEntryErrorMessage = document.getElementById('pin-entry-error-message');
@@ -309,12 +373,12 @@ async function handlePinSubmit() {
         }
         await setPin(currentPinEntryPerson, enteredPin);
         pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
-        displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+        if (typeof pinSubmitCallback === 'function') pinSubmitCallback();
     } else { // Enter PIN mode
         const storedPin = await getPin(currentPinEntryPerson); // Re-fetch storedPin here
         if (enteredPin === storedPin) {
             pinEntryModalOverlay.style.display = 'none'; // Hide PIN modal
-            displayFeelingsWheelContent(currentPinEntryPerson); // Show feelings wheel
+            if (typeof pinSubmitCallback === 'function') pinSubmitCallback();
         } else {
             pinEntryErrorMessage.textContent = "Incorrect PIN. Please try again.";
             pinEntryErrorMessage.classList.remove('hidden');
@@ -324,7 +388,15 @@ async function handlePinSubmit() {
 }
 
 async function showPinEntryForFeelingSelection(personName) {
+    // On successful PIN entry, display the feelings wheel for the person.
+    showPinEntry(personName, () => displayFeelingsWheelContent(personName));
+}
+
+async function showPinEntry(personName, onSuccessCallback) {
     currentPinEntryPerson = personName;
+    // Store the callback in a globally accessible place to be used by handlePinSubmit
+    window.pinSubmitSuccessCallback = onSuccessCallback;
+
     const pinEntryModalOverlay = document.getElementById('pin-entry-modal-overlay');
     const pinModalTitle = document.getElementById('pin-modal-title');
     const pinEnterMessage = document.getElementById('pin-enter-message');
@@ -366,7 +438,6 @@ async function showPinEntryForFeelingSelection(personName) {
     setTimeout(() => {
         pinEntryInput.focus();
     }, 0);
-
 }
 
 function displayFeelingsWheelContent(name) {

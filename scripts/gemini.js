@@ -1,5 +1,5 @@
-import { GEMINI_API_KEY } from '/config.js';
-import { getVerseHistory, addVerseToHistory, getRawWeatherData, setGeminiChatHistory, getSelectedPersonForMood } from './main.js';
+import { GEMINI_API_KEY, FAMILY_MEMBERS } from '/config.js';
+import { getVerseHistory, addVerseToHistory, getRawWeatherData, setGeminiChatHistory, getSelectedPersonForMood, calculateAge } from './main.js';
 
 // --- JSON Schemas for Gemini ---
 const verseInsightSchema = {
@@ -55,7 +55,7 @@ const feelingInsightSchema = {
     required: ["explanation", "strategies"]
 };
 
-async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchema = null) {
+async function callGemini(chatHistory, { systemInstruction = null, model = "gemini-2.5-flash", responseSchema = null } = {}) {
     const apiKey = typeof __gemini_api_key !== 'undefined' ? __gemini_api_key : GEMINI_API_KEY;
     if (!apiKey && !(typeof __gemini_api_key !== 'undefined')) {
         console.error("Gemini API key is missing.");
@@ -68,6 +68,9 @@ async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchem
     for (let i = 0; i < 4; i++) {
         try {
             const payload = { contents: chatHistory };
+            if (systemInstruction) {
+                payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+            }
             if (responseSchema) {
                 payload.generationConfig = {
                     responseMimeType: "application/json",
@@ -118,14 +121,14 @@ async function callGemini(chatHistory, model = "gemini-2.5-flash", responseSchem
 
 export async function fetchAgeAppropriateWordFromGemini(wordHistory) {
     const exclusionPrompt = wordHistory.length > 0 ? `Do not choose any of these words: ${wordHistory.join(', ')}.` : '';
-    const prompt = `Provide a single, age-appropriate English word for a child (ages 8-13) that is interesting but not overly obscure. ${exclusionPrompt} Only return the word itself, with no extra text or punctuation.`;
+    const prompt = `Provide a single, age-appropriate English word for a child (ages 9-14) that is interesting but not overly obscure. ${exclusionPrompt} Only return the word itself, with no extra text or punctuation.`;
     return await callGemini([{ parts: [{ text: prompt }] }]);
 }
 
 export async function fetchGeminiSentencesForWord(word) {
-    const prompt = `Provide an array of 2-3 example sentences for the word "${word}" that are easy for a child (ages 8-13) to understand. Return as a JSON array of strings.`;
+    const prompt = `Provide an array of 2-3 example sentences for the word "${word}" that are easy for a child (ages 9-14) to understand. Return as a JSON array of strings.`;
     const schema = { type: "ARRAY", items: { type: "STRING" } };
-    const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, { type: "OBJECT", properties: { "sentences": schema }, required: ["sentences"] });
+    const result = await callGemini([{ parts: [{ text: prompt }] }], { responseSchema: { type: "OBJECT", properties: { "sentences": schema }, required: ["sentences"] } });
     return result.sentences || [];
 }
 
@@ -161,7 +164,7 @@ export async function fetchDistractorDefinitionsForWord(word, correctDefinition)
     `;
 
     try {
-        const result = await callGemini([{ parts: [{ text: prompt }] }], undefined, distractorSchema);
+        const result = await callGemini([{ parts: [{ text: prompt }] }], { responseSchema: distractorSchema });
         return result.distractors || [];
     } catch (error) {
         console.error(`Error fetching distractors for ${word}:`, error);
@@ -189,8 +192,16 @@ export async function fetchActivityIdeas(weatherContext) {
     const timeOfDay = getTimeOfDay();
     const inspirations = getInspirationWords(3);
     const inspirationText = inspirations.join(', ').replace(/, ([^,]*)$/, ' and $1'); // Formats to "a, b, and c"
+    
+    const children = FAMILY_MEMBERS.filter(m => m.relationship === 'child');
+    const parents = FAMILY_MEMBERS.filter(m => m.relationship === 'parent');
+    
+    const childrenString = children.map(child => `${child.name} (${calculateAge(child.birthdate)})`).join(', ');
+    const parentStrings = parents.map(parent => `${parent.name} is a ${parent.gender === 'male' ? 'Caucasian male' : 'female'}, ${calculateAge(parent.birthdate)} years old.`);
+    
+    const familyDescription = `You are a helpful local guide for the Weaver family with ${children.length} children: ${childrenString}. ${parentStrings.join(' ')}`;
 
-    const prompt = `You are a helpful local guide for the Andrew Weaver family with 7 children: Liam (9), Kaci (12), Declan (11), Halle (11), Malia (13), Olivia (17). Andrew is a Caucasian male, 37 years old. His wife Jenna is 37. 
+    const prompt = `${familyDescription}
     
     It is currently the **${timeOfDay}**. Based on this weather information for Greer, SC: "${weatherContext}". 
     Today's random inspiration words are **${inspirationText}**.
@@ -200,7 +211,7 @@ export async function fetchActivityIdeas(weatherContext) {
     Ensure a mix of creative (e.g., arts/crafts, storytelling), physical (e.g., sports, active games), quiet (e.g., reading, puzzles), family friendly local events(free preferred) and adventurous (e.g., exploring parks, new places) activities. Include both at-home (indoor or outdoor) and local (near Greer, SC) options. For each idea, provide a "title" and a short but detailed "description". Do NOT include any information or suggestions about parental supervision in the response.`;
     
     try {
-        const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], undefined, activitySchema);
+        const parsedJson = await callGemini([{ parts: [{ text: prompt }] }], { responseSchema: activitySchema });
         return parsedJson.activities || [];
     } catch (error) {
         console.error("Error calling Gemini API for weather:", error);
@@ -208,6 +219,13 @@ export async function fetchActivityIdeas(weatherContext) {
     }
 }
 
+export async function fetchVerseOfTheDay() {
+    let verseHistory = getVerseHistory();
+    const versesToExclude = verseHistory.slice(-150); // Exclude the last 150 verses
+    let exclusionInstruction = versesToExclude.length > 0 ? ` Ensure the verse reference is NOT one of these: ${versesToExclude.join(', ')}.` : "";
+    const versePrompt = `Provide one inspirational Bible verse from the NLT (New Living Translation), including its reference. Try to select a verse that is not extremely common and that can easily be used for inspiration or to give wisdom for future or present issues.${exclusionInstruction} Format it strictly as 'VERSE_TEXT (Book Chapter:Verse NLT)' with no extra commentary or formatting.`;
+    return await callGemini([{ parts: [{ text: versePrompt }] }]);
+}
 
 export async function fetchConversationStarter() {
     let questionHistory = [];
@@ -257,8 +275,7 @@ Based on the Bible verse "${verseToAnalyze.text}" (${verseToAnalyze.reference}),
 Ensure the entire output is a single, valid JSON object.`;
 
     try {
-        const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], undefined, verseInsightSchema);
-        localStorage.setItem('verseData', JSON.stringify(insights));
+        const insights = await callGemini([{ parts: [{ text: insightPrompt }] }], { responseSchema: verseInsightSchema });
         return insights;
     } catch (error) {
         console.error("Failed to fetch consolidated insights:", error);
@@ -267,29 +284,25 @@ Ensure the entire output is a single, valid JSON object.`;
     }
 }
 
-export async function askGemini(chatHistory, question) {
-    const conversationToSend = JSON.parse(JSON.stringify(chatHistory));
-    conversationToSend.push({ role: 'user', parts: [{ text: question }] });
+export async function askGemini(chatHistory, question, userName) {
+    // The question is already in the chatHistory passed to this function
+
+    const user = FAMILY_MEMBERS.find(member => member.name === userName);
+    const age = user ? calculateAge(user.birthdate) : 'a child';
 
     const safetyPrompt = `
           **IMPORTANT RULES:**
           - **DO NOT** answer questions about: violence, weapons, self-harm, hate speech, sexual topics, drugs, alcohol, gambling, religion, evolution, the origin of the world, or other mature or controversial topics.
-          - If a user asks about one of those topics, you MUST respond with **only** this exact phrase: "That's a really interesting and important question! It's a great thing to talk about with your mom and dad."
-          - For all other questions, keep your answers positive, encouraging, and simple for a child (ages 9-14) to understand.
+          - If a user asks about one of those topics, you MUST gently decline to answer. Your response should acknowledge that it's an important question but explain that it's a topic best discussed with their parents. Your tone should be warm and redirecting, not dismissive. For example, you could say something like: "Wow, that's a really big and important question! I think it's one of the best questions to talk about with your mom or dad, since they know you so well. Is there anything else I can help you with, like homework or fun facts about animals? 🦒"
+          - For all other questions, keep your answers positive, encouraging, and simple for a child of about ${age} years old to understand.
 
           **Your Personality:**
           - You are a friendly and fun AI assistant.
           - You MUST use lots of emojis in all of your responses to make them fun and engaging. ✨🚀🤔
 
-          The user's question is: "${question}"
     `;
-
-    if (conversationToSend.filter(m => m.role === 'user').length === 1) {
-        conversationToSend[conversationToSend.length - 1].parts[0].text = safetyPrompt;
-    }
-
     try {
-        const answer = await callGemini(conversationToSend);
+        const answer = await callGemini(chatHistory, { systemInstruction: safetyPrompt });
         return answer;
     } catch (error) {
         console.error("Error asking Gemini:", error);
@@ -310,20 +323,25 @@ export async function showFeelingResponse(feeling, coreEmotion) {
 
     // 2. Fetch the insights from Gemini
     const person = getSelectedPersonForMood();
+    const personObject = FAMILY_MEMBERS.find(member => member.name === person);
+    const age = personObject ? calculateAge(personObject.birthdate) : 'a child'; // Default to 'a child' if not found
+
     const prompt = `
-        Act as a child psychologist speaking to ${person}.
+        Act as a behavioral psychologist, who specializes in trauma and CBT techniques, speaking to ${person}, who is ${age} years old.
         The user is feeling "${feeling}", which is a specific type of the core emotion "${coreEmotion}".
         
         Generate a JSON object with two keys: "explanation" and "strategies".
         
         1.  "explanation": A short, simple, and reassuring explanation of what it means to feel ${feeling}. Validate the feeling as normal and okay.
-        2.  "strategies": An array of 2-3 simple, actionable coping strategies or activities that a child can do to manage or process this feeling. Each item in the array should be an object with a "title" and a "description".
+            **Tailor the complexity and language of the explanation to be appropriate for a ${age}-year-old.**
+        2.  "strategies": An array of 2-3 simple, actionable coping strategies or activities that a ${age}-year-old can do to manage or process this feeling. Each item in the array should be an object with a "title" and a "description".
 
         Keep the tone gentle, validating, and age-appropriate.
+
     `;
 
     try {
-        const insight = await callGemini([{ parts: [{ text: prompt }] }], undefined, feelingInsightSchema);
+        const insight = await callGemini([{ parts: [{ text: prompt }] }], { responseSchema: feelingInsightSchema });
 
         // 3. Populate the modal with the fetched content
         if (insight && insight.explanation && insight.strategies) {

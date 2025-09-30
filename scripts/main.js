@@ -1,6 +1,6 @@
 import { initializeFirebase, listenForPrayerRequests, addPrayerRequest, updatePrayerRequest, addPrayerAnswer, updatePrayerAnswer, getCurrentPrayerDocId } from './firebase.js';
-import { fetchActivityIdeas, askGemini, fetchConversationStarter } from './gemini.js';
-import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel, showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, checkRecentPrayerRequests, setAllPrayers } from './ui.js';
+import { fetchActivityIdeas, askGemini, fetchConversationStarter, fetchVerseOfTheDay } from './gemini.js';
+import { updateTime, updateStaticBackground, updateVerseFromLocalList, showVerseInsight, showActivityIdea, initializeFeelingsWheel, initializeFeelingInsightModal, renderChatHistory, renderPrayerLists, initializeSmartSearchHelpModal, initializeSearchOperatorDropdown, renderActivityCarousel, showPrayerListView, showAddRequestView, showEditRequestView, showAnswerRequestView, checkRecentPrayerRequests, setAllPrayers, showGeminiNameSelection, showGeminiChatView, openGeminiModal, updateVerseDisplay, renderVerseCarousel } from './ui.js';
 import { initializeWordOfTheDay } from './word-of-the-day.js';
 import { initializeQuoteOfTheDay } from './quote-of-the-day.js';
 
@@ -15,7 +15,7 @@ let currentIdeaIndex = 0;
 let currentVerseInsightIndex = 0;
 const VERSE_HISTORY_LENGTH = 365;
 let selectedPersonForMood = null;
-let geminiChatHistory = [];
+let geminiChatUser = null;
 let currentWeatherContext = ''; // New global variable
 let lastWeatherDescription = '';
 
@@ -33,8 +33,23 @@ export function getCurrentVerseInsightIndex() { return currentVerseInsightIndex;
 export function setCurrentVerseInsightIndex(index) { currentVerseInsightIndex = index; }
 export function getSelectedPersonForMood() { return selectedPersonForMood; }
 export function setSelectedPersonForMood(person) { selectedPersonForMood = person; }
-export function getGeminiChatHistory() { return geminiChatHistory; }
-export function setGeminiChatHistory(history) { geminiChatHistory = history; }
+export function getGeminiChatUser() { return geminiChatUser; }
+export function setGeminiChatUser(user) { geminiChatUser = user; }
+
+export function getGeminiChatHistory() {
+    if (!geminiChatUser) return [];
+    const histories = JSON.parse(localStorage.getItem('geminiChatHistories') || '{}');
+    return histories[geminiChatUser] || [{
+        role: 'model',
+        parts: [{ text: `Hi ${geminiChatUser}! I'm here to help. You can ask me anything about science, animals, history, or homework.` }]
+    }];
+}
+export function setGeminiChatHistory(history) {
+    if (!geminiChatUser) return;
+    const histories = JSON.parse(localStorage.getItem('geminiChatHistories') || '{}');
+    histories[geminiChatUser] = history;
+    localStorage.setItem('geminiChatHistories', JSON.stringify(histories));
+}
 
 export async function refreshActivityIdeas() {
     const refreshButton = document.getElementById('refresh-ideas');
@@ -218,29 +233,20 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeSearchOperatorDropdown();
         initializeWordOfTheDay();
         initializeQuoteOfTheDay();
-    
-        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
-        document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
-        document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
-        document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
-        document.getElementById('next-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex + 1)); 
-        document.getElementById('refresh-calendar').addEventListener('click', () => {
-            document.getElementById('calendar-iframe').src = document.getElementById('calendar-iframe').src; 
-        });
-        document.getElementById('refresh-starter').addEventListener('click', updateConversationStarter);
 
         // --- Modal Listeners ---
         const geminiModalOverlay = document.getElementById('gemini-modal-overlay');
         document.getElementById('open-gemini-modal').addEventListener('click', () => {
-            geminiModalOverlay.style.display = 'flex';
-            initializeGeminiChat();
-            lucide.createIcons(); 
+            openGeminiModal();
         });
         document.getElementById('close-gemini-modal').addEventListener('click', () => {
+            setGeminiChatUser(null); // Reset user on close
             geminiModalOverlay.style.display = 'none';
         });
         geminiModalOverlay.addEventListener('click', (event) => {
             if (event.target === geminiModalOverlay) {
+                // Reset user when clicking outside the modal
+                setGeminiChatUser(null);
                 geminiModalOverlay.style.display = 'none';
             }
         });
@@ -251,6 +257,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleAskGeminiUI();
             }
         });
+        document.getElementById('gemini-switch-user-btn').addEventListener('click', () => {
+            setGeminiChatUser(null);
+            showGeminiNameSelection();
+        });
+
+        document.getElementById('refresh-ideas').addEventListener('click', refreshActivityIdeas);
+        document.getElementById('prev-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex - 1));
+        document.getElementById('next-idea').addEventListener('click', () => showActivityIdea(currentIdeaIndex + 1)); 
+        document.getElementById('prev-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex - 1));
+        document.getElementById('next-verse-insight').addEventListener('click', () => showVerseInsight(currentVerseInsightIndex + 1)); 
+        document.getElementById('refresh-calendar').addEventListener('click', () => {
+            document.getElementById('calendar-iframe').src = document.getElementById('calendar-iframe').src; 
+        });
+        document.getElementById('refresh-starter').addEventListener('click', () => updateConversationStarter(true));
+
 
 
         // --- Verse Devotional Modal Listeners ---
@@ -299,25 +320,35 @@ async function initializeDashboard() {
     updateConversationStarter();
 }
 
-async function updateConversationStarter() {
+async function updateConversationStarter(forceRefresh = false) {
     const questionEl = document.getElementById('starter-question');
     const refreshBtn = document.getElementById('refresh-starter');
-    const originalQuestionContent = questionEl.innerHTML; // Store original content of question element
-    const originalButtonContent = refreshBtn.innerHTML; // Store original content of button
+    const originalButtonContent = refreshBtn.innerHTML;
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const cachedQuestion = localStorage.getItem('dailyQuestion');
+    const lastQuestionDate = localStorage.getItem('lastQuestionDate');
+
+    if (!forceRefresh && lastQuestionDate === todayKey && cachedQuestion) {
+        questionEl.textContent = cachedQuestion;
+        return;
+    }
 
     refreshBtn.disabled = true;
-    questionEl.innerHTML = '<div class="flex items-center justify-center"><div class="spinner w-5 h-5 mr-2"></div> Loading new question...</div>'; // Show spinner and text in question area
+    questionEl.innerHTML = '<div class="flex items-center justify-center"><div class="spinner w-5 h-5 mr-2"></div> Loading new question...</div>';
 
     try {
         const question = await fetchConversationStarter();
         questionEl.textContent = question;
+        localStorage.setItem('dailyQuestion', question);
+        localStorage.setItem('lastQuestionDate', todayKey);
     } catch (error) {
         console.error("Error fetching conversation starter:", error);
-        questionEl.textContent = 'Failed to load question. Please try again.'; // Fallback message
+        questionEl.textContent = 'Failed to load question. Please try again.';
     } finally {
         refreshBtn.disabled = false;
-        refreshBtn.innerHTML = originalButtonContent; // Restore original button content
-        lucide.createIcons(); // Re-render icons if any
+        refreshBtn.innerHTML = originalButtonContent;
+        lucide.createIcons();
     }
 }
 
@@ -326,9 +357,9 @@ async function scheduleDailyVerseUpdate() {
     const midnight = new Date(now);
     midnight.setHours(24, 0, 0, 0); 
     const msUntilMidnight = midnight.getTime() - now.getTime();
-    updateVerseFromLocalList(); 
+    fetchVerseOfTheDayFromGemini();
     setTimeout(() => {
-        setInterval(updateVerseFromLocalList, 24 * 60 * 60 * 1000);
+        setInterval(fetchVerseOfTheDayFromGemini, 24 * 60 * 60 * 1000);
     }, msUntilMidnight);
 }
 
@@ -347,6 +378,42 @@ export function addVerseToHistory(verseReference) {
         history.shift();
     }
     localStorage.setItem('verseHistory', JSON.stringify(history));
+}
+
+async function fetchVerseOfTheDayFromGemini() {
+    const verseTextEl = document.getElementById('verse-text');
+    const verseRefEl = document.getElementById('verse-reference');
+    
+    const todayKey = new Date().toISOString().slice(0, 10); 
+    const cachedData = localStorage.getItem('verseData');
+    const lastVerseDate = localStorage.getItem('lastVerseDate');
+
+    if (lastVerseDate === todayKey && cachedData) {
+        console.log("Loading verse and insights from localStorage for today.");
+        const data = JSON.parse(cachedData);
+        setCurrentVerse(data.verse); // Make sure the verse is in the global state
+        verseTextEl.textContent = data.verse.text;
+        verseRefEl.textContent = data.verse.reference;
+        renderVerseCarousel(data.insights); // Pass only the insights to the carousel
+        return; 
+    }
+
+    verseTextEl.textContent = "Generating verse...";
+    verseRefEl.textContent = "";
+
+    try {
+        const geminiVerseResponse = await fetchVerseOfTheDay();
+        const strictMatch = geminiVerseResponse.match(/(.*)\s\(([^)]+)\sNLT\)/i);
+        if (!strictMatch) throw new Error("Verse response format was incorrect.");
+        
+        const [_, text, reference] = strictMatch;
+        const newVerse = { text: text.trim(), reference: `${reference.trim()} NLT` };
+        addVerseToHistory(newVerse.reference);
+        updateVerseDisplay(newVerse);
+    } catch (error) {
+        console.error("Error fetching verse of the day from Gemini:", error);
+        updateVerseFromLocalList(); // Fallback to the local list on error
+    }
 }
 
 async function fetchCurrentConditions() {
@@ -504,6 +571,17 @@ async function fetchForecastData() {
     }
 }
 
+export function calculateAge(birthdateString) {
+    const birthDate = new Date(birthdateString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
+
 function getWeatherDescription(code) {
     const descriptions = {
         0: 'Clear sky',
@@ -590,14 +668,6 @@ function getNWSWeatherIcon(shortForecast, isDaytime) {
     return `https://raw.githubusercontent.com/basmilius/weather-icons/master/production/fill/all/${iconName}.svg`;
 }
 
-function initializeGeminiChat() {
-    setGeminiChatHistory([{
-        role: 'model',
-        parts: [{ text: "Hi! I'm here to help. You can ask me anything about science, animals, history, or homework." }]
-    }]);
-    renderChatHistory();
-}
-
 async function handleAskGeminiUI() {
     const questionInput = document.getElementById('gemini-question-input');
     const submitButton = document.getElementById('submit-gemini-question');
@@ -605,7 +675,9 @@ async function handleAskGeminiUI() {
     const question = questionInput.value.trim();
     if (!question) return;
 
-    setGeminiChatHistory([...getGeminiChatHistory(), { role: 'user', parts: [{ text: question }] }]);
+    const currentHistory = getGeminiChatHistory();
+    const newHistory = [...currentHistory, { role: 'user', parts: [{ text: question }] }];
+    setGeminiChatHistory(newHistory);
     renderChatHistory();
     questionInput.value = '';
 
@@ -619,9 +691,10 @@ async function handleAskGeminiUI() {
     answerContainer.appendChild(thinkingDiv);
     thinkingDiv.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    const answer = await askGemini(getGeminiChatHistory(), question);
+    const answer = await askGemini(newHistory, question, geminiChatUser);
 
-    setGeminiChatHistory([...getGeminiChatHistory(), { role: 'model', parts: [{ text: answer }] }]);
+    const finalHistory = [...newHistory, { role: 'model', parts: [{ text: answer }] }];
+    setGeminiChatHistory(finalHistory);
     renderChatHistory();
 
     submitButton.disabled = false;
